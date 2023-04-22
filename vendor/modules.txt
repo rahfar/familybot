@@ -7,3 +7,6 @@ github.com/jessevdk/go-flags
 # golang.org/x/sys v0.7.0
 ## explicit; go 1.17
 golang.org/x/sys/unix
+# gopkg.in/ugjka/go-tz.v2 v2.0.14
+## explicit; go 1.13
+gopkg.in/ugjka/go-tz.v2/tz

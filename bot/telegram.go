@@ -1,15 +1,17 @@
 package bot
 
 import (
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	"strings"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Bot struct {
 	Token   string
 	Dbg     bool
 	GroupID int64
+	DataDir string
 }
 
 func (b *Bot) Run() {
@@ -47,6 +49,11 @@ func (b *Bot) on_message(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 	switch {
 	case strings.HasPrefix(message.Text, "пинг"):
 		resp = ping(message)
+	case strings.HasPrefix(message.Text, "!время"):
+		resp = get_users_current_time(b.DataDir)
+	case message.Location != nil && message.From != nil:
+		remember_tz(message, b.DataDir)
+		return
 	default:
 		return
 	}
