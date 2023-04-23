@@ -12,7 +12,7 @@ var opts struct {
 		Token   string `long:"token" env:"TOKEN" description:"telegram bot token" default:"test"`
 		GroupID int64  `long:"group" env:"GROUP" description:"group id" default:"0"`
 	} `group:"telegram" namespace:"telegram" env-namespace:"TELEGRAM"`
-	DataDir string `long:"data_dir" env:"DATA_DIR" description:"path to data directory"`
+	DataDir string `long:"data_dir" env:"DATA_DIR" description:"path to data directory" default:"./data"`
 	Dbg     bool   `long:"debug" env:"DEBUG" description:"debug mode"`
 }
 
