@@ -8,10 +8,11 @@ import (
 )
 
 type Bot struct {
-	Token   string
-	Dbg     bool
-	GroupID int64
-	DataDir string
+	Token       string
+	Dbg         bool
+	GroupID     int64
+	AdminChatID int64
+	DataDir     string
 }
 
 func (b *Bot) Run() {
@@ -30,13 +31,13 @@ func (b *Bot) Run() {
 	updates := bot_api.GetUpdatesChan(u)
 
 	for update := range updates {
-		if update.Message == nil { // ignore any non-Message updates
+		if update.Message == nil {
 			continue
 		}
 		if update.Message.Chat == nil {
 			continue
 		}
-		if b.GroupID != update.Message.Chat.ID {
+		if update.Message.Chat.ID != b.GroupID && update.Message.Chat.ID != b.AdminChatID {
 			log.Printf("Skip message from unsupported chat. Chat: %+v\n", *update.Message.Chat)
 			continue
 		}
