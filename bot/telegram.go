@@ -3,6 +3,7 @@ package bot
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
@@ -58,6 +59,8 @@ func (b *Bot) on_message(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 		resp = ping(message)
 	case strings.HasPrefix(message.Text, "!время"):
 		resp = get_users_current_time(b.DataDir)
+	case strings.HasPrefix(message.Text, "!погода"):
+		resp = get_current_weather(b.WeatherAPIKey, b.WeatherAPICities)
 	case message.Location != nil && message.From != nil:
 		remember_tz(message, b.DataDir)
 		return
@@ -86,6 +89,9 @@ func (b *Bot) mourning_job(bot_api *tgbotapi.BotAPI) {
 		}
 		// call weather api
 		weather := api_clients.Get_weather(b.WeatherAPIKey, b.WeatherAPICities)
+		sort.Slice(weather, func(i, j int) bool {
+			return weather[i].CurrentWeather.Temp < weather[j].CurrentWeather.Temp
+		})
 		if len(weather) > 0 {
 			text += "\nПрогноз погоды:\n"
 			for _, w := range weather {

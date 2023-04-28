@@ -6,9 +6,11 @@ import (
 	"io"
 	"log"
 	"os"
+	"sort"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/rahfar/familybot/bot/api_clients"
 	"gopkg.in/ugjka/go-tz.v2/tz"
 )
 
@@ -104,5 +106,21 @@ func remember_tz(message tgbotapi.Message, data_dir string) {
 	_, err = file.Write(content)
 	if err != nil {
 		log.Printf("[ERROR] Could not write to file: %+v", err)
+	}
+}
+
+func get_current_weather(apikey string, cities []string) string {
+	resp := ""
+	weather := api_clients.Get_weather(apikey, cities)
+	sort.Slice(weather, func(i, j int) bool {
+		return weather[i].CurrentWeather.Temp < weather[j].CurrentWeather.Temp
+	})
+	if len(weather) > 0 {
+		for _, w := range weather {
+			resp += fmt.Sprintf("%s: %.1f°C, %s\n", w.Location.Name, w.CurrentWeather.Temp, w.CurrentWeather.Condition.Text)
+		}
+		return resp
+	} else {
+		return "Нет данных"
 	}
 }
