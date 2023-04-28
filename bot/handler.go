@@ -43,12 +43,12 @@ func get_users_current_time(data_dir string) string {
 	user_timezones := make([]UserTimezone, 0, 10)
 	err = json.Unmarshal(content, &user_timezones)
 	if err != nil {
-		log.Printf("Could not unmarshal json: %+v", err)
+		log.Printf("[ERROR] Could not unmarshal json: %+v", err)
 	}
 	for _, ut := range user_timezones {
 		loc, err := time.LoadLocation(ut.TimeZone)
 		if err != nil {
-			log.Printf("Wrong timezone for user: %+v", ut)
+			log.Printf("[ERROR] Wrong timezone for user: %+v", ut)
 			continue
 		}
 		resp += fmt.Sprintf("У %s сейчас %s\n", ut.UserName, time.Now().In(loc).Format("15:04 MST"))
@@ -103,6 +103,6 @@ func remember_tz(message tgbotapi.Message, data_dir string) {
 	}
 	_, err = file.Write(content)
 	if err != nil {
-		log.Printf("Could not write to file: %+v", err)
+		log.Printf("[ERROR] Could not write to file: %+v", err)
 	}
 }

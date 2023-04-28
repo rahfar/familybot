@@ -27,7 +27,7 @@ var opts struct {
 
 func main() {
 	if _, err := flags.Parse(&opts); err != nil {
-		log.Fatal("Error parsing options")
+		log.Fatal("[ERROR] Error parsing options")
 	}
 
 	bot := bot.Bot{

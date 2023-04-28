@@ -30,7 +30,7 @@ func (b *Bot) Run() {
 
 	bot_api.Debug = b.Dbg
 
-	log.Printf("Authorized on account %s", bot_api.Self.UserName)
+	log.Printf("[INFO] Authorized on account %s", bot_api.Self.UserName)
 
 	go b.mourning_job(bot_api)
 
@@ -44,7 +44,7 @@ func (b *Bot) Run() {
 			continue
 		}
 		if update.Message.Chat.ID != b.GroupID && update.Message.Chat.ID != b.AdminChatID {
-			log.Printf("Skip message from unsupported chat. Chat: %+v\n", *update.Message.Chat)
+			log.Printf("[INFO] Skip message from unsupported chat. Chat: %+v\n", *update.Message.Chat)
 			continue
 		}
 		b.on_message(*update.Message, bot_api)
@@ -73,10 +73,10 @@ func (b *Bot) on_message(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 }
 
 func (b *Bot) mourning_job(bot_api *tgbotapi.BotAPI) {
-	log.Println("Starting mourning job")
+	log.Println("[INFO] Starting mourning job")
 	for {
 		text := "Доброе утро! 🌅\n"
-		wait_untile_mourning()
+		wait_until_mourning()
 		// call currency api
 		c, err := api_clients.Get_currency(b.CurrencyAPIKey)
 		if err != nil {
@@ -101,13 +101,12 @@ func (b *Bot) mourning_job(bot_api *tgbotapi.BotAPI) {
 	}
 }
 
-func wait_untile_mourning() {
+func wait_until_mourning() {
 	t := time.Now()
-	var desiredTime time.Time
-	if t.Hour() > 7 {
+	desiredTime := time.Date(t.Year(), t.Month(), t.Day(), 7, 0, 0, 0, t.Location())
+	if desiredTime.Sub(t) <= 0 {
 		desiredTime = time.Date(t.Year(), t.Month(), t.Day(), 7, 0, 0, 0, t.Location()).Add(24 * time.Hour)
-	} else {
-		desiredTime = time.Date(t.Year(), t.Month(), t.Day(), 7, 0, 0, 0, t.Location())
 	}
+	log.Println("[INFO] Waiting until mourning ", desiredTime.Sub(t))
 	time.Sleep(desiredTime.Sub(t))
 }
