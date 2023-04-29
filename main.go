@@ -15,12 +15,15 @@ var opts struct {
 		AdminChatID int64  `long:"admin_chat" env:"ADMIN_CHAT" description:"admin chat id" default:"0"`
 	} `group:"telegram" namespace:"telegram" env-namespace:"TELEGRAM"`
 	WeatherAPI struct {
-		Key    string   `long:"apikey" env:"KEY"`
+		Key    string `long:"key" env:"KEY"`
 		Cities string `long:"cities" env:"CITIES"`
 	} `group:"weatherapi" namespace:"weatherapi" env-namespace:"WEATHERAPI"`
 	CurrencyAPI struct {
-		Key string `long:"apikey" env:"KEY"`
+		Key string `long:"key" env:"KEY"`
 	} `group:"currencyapi" namespace:"currencyapi" env-namespace:"CURRENCYAPI"`
+	OpenaiAPI struct {
+		Key string `long:"key" env:"KEY"`
+	} `group:"openaiapi" namespace:"openaiapi" env-namespace:"OPENAIAPI"`
 	DataDir string `long:"data_dir" env:"DATA_DIR" description:"path to data directory" default:"./data"`
 	Dbg     bool   `long:"debug" env:"DEBUG" description:"debug mode"`
 }
@@ -39,6 +42,7 @@ func main() {
 		WeatherAPIKey:    opts.WeatherAPI.Key,
 		WeatherAPICities: strings.Split(opts.WeatherAPI.Cities, ","),
 		CurrencyAPIKey:   opts.CurrencyAPI.Key,
+		OpenaiAPIKey:     opts.OpenaiAPI.Key,
 	}
 	bot.Run()
 }

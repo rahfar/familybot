@@ -7,10 +7,11 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/rahfar/familybot/bot/api_clients"
+	"github.com/rahfar/familybot/bot/apiclient"
 	"gopkg.in/ugjka/go-tz.v2/tz"
 )
 
@@ -28,7 +29,7 @@ func ping(message tgbotapi.Message) string {
 	return "понг"
 }
 
-func get_users_current_time(data_dir string) string {
+func getUsersCurrentTime(data_dir string) string {
 	resp := ""
 	file_path := data_dir + "/" + user_timezone_file
 
@@ -61,7 +62,7 @@ func get_users_current_time(data_dir string) string {
 	return resp
 }
 
-func remember_tz(message tgbotapi.Message, data_dir string) {
+func rememberTZ(message tgbotapi.Message, data_dir string) {
 	file_path := data_dir + "/" + user_timezone_file
 	tz, err := tz.GetZone(tz.Point{Lon: message.Location.Longitude, Lat: message.Location.Latitude})
 	if err != nil {
@@ -109,9 +110,9 @@ func remember_tz(message tgbotapi.Message, data_dir string) {
 	}
 }
 
-func get_current_weather(apikey string, cities []string) string {
+func getCurrentWeather(apikey string, cities []string) string {
 	resp := ""
-	weather := api_clients.Get_weather(apikey, cities)
+	weather := apiclient.Get_weather(apikey, cities)
 	sort.Slice(weather, func(i, j int) bool {
 		return weather[i].CurrentWeather.Temp < weather[j].CurrentWeather.Temp
 	})
@@ -123,4 +124,14 @@ func get_current_weather(apikey string, cities []string) string {
 	} else {
 		return "Нет данных"
 	}
+}
+
+func askChatGPT(apikey, question string) string {
+	question = strings.TrimSpace(question)
+	resp, err := apiclient.CallOpenai(apikey, question)
+	if err != nil || len(resp) == 0 {
+		log.Printf("[ERROR] Error occured while call openai: %v", err)
+		return "Ошибка при вызове ChatGPT :("
+	}
+	return resp
 }

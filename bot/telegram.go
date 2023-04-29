@@ -9,7 +9,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"github.com/rahfar/familybot/bot/api_clients"
+	"github.com/rahfar/familybot/bot/apiclient"
 )
 
 type Bot struct {
@@ -21,6 +21,7 @@ type Bot struct {
 	WeatherAPIKey    string
 	WeatherAPICities []string
 	CurrencyAPIKey   string
+	OpenaiAPIKey     string
 }
 
 func (b *Bot) Run() {
@@ -55,14 +56,16 @@ func (b *Bot) Run() {
 func (b *Bot) on_message(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 	var resp string
 	switch {
-	case strings.HasPrefix(message.Text, "!пинг"):
+	case strings.HasPrefix(strings.ToLower(message.Text), "!пинг"):
 		resp = ping(message)
-	case strings.HasPrefix(message.Text, "!время"):
-		resp = get_users_current_time(b.DataDir)
-	case strings.HasPrefix(message.Text, "!погода"):
-		resp = get_current_weather(b.WeatherAPIKey, b.WeatherAPICities)
+	case strings.HasPrefix(strings.ToLower(message.Text), "!время"):
+		resp = getUsersCurrentTime(b.DataDir)
+	case strings.HasPrefix(strings.ToLower(message.Text), "!погода"):
+		resp = getCurrentWeather(b.WeatherAPIKey, b.WeatherAPICities)
+	case strings.HasPrefix(strings.ToLower(message.Text), "!чат"):
+		resp = askChatGPT(b.OpenaiAPIKey, strings.TrimPrefix(message.Text, "!чат"))
 	case message.Location != nil && message.From != nil:
-		remember_tz(message, b.DataDir)
+		rememberTZ(message, b.DataDir)
 		return
 	default:
 		return
@@ -81,14 +84,14 @@ func (b *Bot) mourning_job(bot_api *tgbotapi.BotAPI) {
 		text := "Доброе утро! 🌅\n"
 		wait_until_mourning()
 		// call currency api
-		c, err := api_clients.Get_currency(b.CurrencyAPIKey)
+		c, err := apiclient.GetCurrency(b.CurrencyAPIKey)
 		if err != nil {
 			log.Printf("[ERROR] Could not get currency exchange rates: %v", err)
 		} else {
 			text += fmt.Sprintf("\nКурсы валют:\n    USD %.2f₽\n    EUR %.2f₽\n    BTC %.2f$\n", c.Data.RUB.Value, c.Data.RUB.Value/c.Data.EUR.Value, 1.0/c.Data.BTC.Value)
 		}
 		// call weather api
-		weather := api_clients.Get_weather(b.WeatherAPIKey, b.WeatherAPICities)
+		weather := apiclient.Get_weather(b.WeatherAPIKey, b.WeatherAPICities)
 		sort.Slice(weather, func(i, j int) bool {
 			return weather[i].CurrentWeather.Temp < weather[j].CurrentWeather.Temp
 		})

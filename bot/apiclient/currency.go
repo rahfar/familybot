@@ -1,4 +1,4 @@
-package api_clients
+package apiclient
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ type Currency struct {
 	} `json:"data"`
 }
 
-func Get_currency(apikey string) (*Currency, error) {
+func GetCurrency(apikey string) (*Currency, error) {
 	base_url := "https://api.currencyapi.com/v3/latest"
 	query_str := fmt.Sprintf("?apikey=%s", apikey)
 	resp, err := http.Get(base_url + query_str)
