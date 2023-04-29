@@ -34,7 +34,7 @@ func (b *Bot) Run() {
 
 	log.Printf("[INFO] Authorized on account %s", bot_api.Self.UserName)
 
-	go b.mourning_job(bot_api)
+	go b.mourningJob(bot_api)
 
 	update_cfg := tgbotapi.NewUpdate(0)
 	update_cfg.Timeout = 60
@@ -49,11 +49,11 @@ func (b *Bot) Run() {
 			log.Printf("[INFO] Skip message from unsupported chat. Chat: %+v\n", *update.Message.Chat)
 			continue
 		}
-		b.on_message(*update.Message, bot_api)
+		b.onMessage(*update.Message, bot_api)
 	}
 }
 
-func (b *Bot) on_message(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
+func (b *Bot) onMessage(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 	var resp string
 	switch {
 	case strings.HasPrefix(strings.ToLower(message.Text), "!пинг"):
@@ -80,11 +80,11 @@ func (b *Bot) on_message(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 	}
 }
 
-func (b *Bot) mourning_job(bot_api *tgbotapi.BotAPI) {
+func (b *Bot) mourningJob(bot_api *tgbotapi.BotAPI) {
 	log.Println("[INFO] Starting mourning job")
 	for {
 		text := "Доброе утро! 🌅\n"
-		wait_until_mourning()
+		waitUntilMourning()
 		// call currency api
 		c, err := apiclient.GetCurrency(b.CurrencyAPIKey)
 		if err != nil {
@@ -112,7 +112,7 @@ func (b *Bot) mourning_job(bot_api *tgbotapi.BotAPI) {
 	}
 }
 
-func wait_until_mourning() {
+func waitUntilMourning() {
 	t := time.Now()
 	desiredTime := time.Date(t.Year(), t.Month(), t.Day(), 7, 0, 0, 0, t.Location())
 	if desiredTime.Sub(t) <= 0 {
