@@ -86,11 +86,29 @@ func (b *Bot) mourningJob(bot_api *tgbotapi.BotAPI) {
 		text := "Доброе утро! 🌅\n"
 		waitUntilMourning()
 		// call currency api
-		c, err := apiclient.GetCurrency(b.CurrencyAPIKey)
-		if err != nil {
-			log.Printf("[ERROR] Could not get currency exchange rates: %v", err)
-		} else {
-			text += fmt.Sprintf("\nКурсы валют:\n    USD %.2f₽\n    EUR %.2f₽\n    BTC %.2f$\n", c.Data.RUB.Value, c.Data.RUB.Value/c.Data.EUR.Value, 1.0/c.Data.BTC.Value)
+		xr_today, err1 := apiclient.GetExchangeRates(b.CurrencyAPIKey)
+		xr_yesterday, err2 := apiclient.GetHistoryExchangeRates(b.CurrencyAPIKey, time.Now().UTC().Add(-48*time.Hour))
+		switch {
+		case err1 != nil:
+			log.Printf("[ERROR] Could not get currency exchange rates: %v", err1)
+		case err2 != nil:
+			log.Printf("[ERROR] Could not get currency history exchange rates: %v", err2)
+		default:
+			USDRUB_today := xr_today.Data.RUB.Value
+			EURRUB_today := xr_today.Data.RUB.Value / xr_today.Data.EUR.Value
+			BTCUSD_today := 1.0 / xr_today.Data.BTC.Value
+			USDRUB_yesterday := xr_yesterday.Data.RUB.Value
+			EURRUB_yesterday := xr_yesterday.Data.RUB.Value / xr_yesterday.Data.EUR.Value
+			BTCUSD_yesterday := 1.0 / xr_yesterday.Data.BTC.Value
+
+			text += fmt.Sprintf("\nКурсы валют:\n    USD %.2f₽ (%.2f%%) \n    EUR %.2f₽ (%.2f%%)\n    BTC %.2f$ (%.2f%%)\n",
+				USDRUB_today,
+				(USDRUB_today/USDRUB_yesterday-1)*100,
+				EURRUB_today,
+				(EURRUB_today/EURRUB_yesterday-1)*100,
+				BTCUSD_today,
+				(BTCUSD_today/BTCUSD_yesterday-1)*100,
+			)
 		}
 		// call weather api
 		weather := apiclient.Get_weather(b.WeatherAPIKey, b.WeatherAPICities)
@@ -115,8 +133,8 @@ func (b *Bot) mourningJob(bot_api *tgbotapi.BotAPI) {
 func waitUntilMourning() {
 	t := time.Now()
 	desiredTime := time.Date(t.Year(), t.Month(), t.Day(), 7, 0, 0, 0, t.Location())
-	if desiredTime.Sub(t) <= 0 {
-		desiredTime = time.Date(t.Year(), t.Month(), t.Day(), 7, 0, 0, 0, t.Location()).Add(24 * time.Hour)
+	if desiredTime.Sub(t) <= 5*time.Second {
+		desiredTime = desiredTime.Add(24 * time.Hour)
 	}
 	log.Println("[INFO] Waiting until mourning ", desiredTime.Sub(t))
 	time.Sleep(desiredTime.Sub(t))

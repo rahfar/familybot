@@ -43,12 +43,12 @@ func api_call(apikey string, city string) (*WeatherData, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("non 2** HTTP status code: %d - %s", resp.StatusCode, resp.Status)
-	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+	if resp.StatusCode/100 != 2 {
+		return nil, fmt.Errorf("non 2** HTTP status code: %d - %s - %s", resp.StatusCode, resp.Status, string(body))
 	}
 	var w WeatherData
 	err = json.Unmarshal(body, &w)
