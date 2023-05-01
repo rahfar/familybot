@@ -135,3 +135,16 @@ func askChatGPT(apikey, question string) string {
 	}
 	return resp
 }
+
+func getYesterdaySales(apikey, spreadsheetid string) string {
+	yesterday := time.Now().Add(-24 * time.Hour)
+	sales, err := apiclient.CallGoogleSheetsApi(apikey, spreadsheetid, yesterday.Day(), int(yesterday.Month()))
+	if err != nil {
+		return "Возникла ошибка при чтении данных :("
+	}
+	resp := "Продажи:\n"
+	for _, sale := range sales {
+		resp += fmt.Sprintf("    %s - %s - %.2f₽\n", sale.Name, sale.SalesType, sale.SalesValue)
+	}
+	return resp
+}

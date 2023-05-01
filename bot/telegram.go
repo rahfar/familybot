@@ -13,15 +13,17 @@ import (
 )
 
 type Bot struct {
-	Token            string
-	Dbg              bool
-	GroupID          int64
-	AdminChatID      int64
-	DataDir          string
-	WeatherAPIKey    string
-	WeatherAPICities []string
-	CurrencyAPIKey   string
-	OpenaiAPIKey     string
+	Token                        string
+	Dbg                          bool
+	GroupID                      int64
+	AdminChatID                  int64
+	DataDir                      string
+	WeatherAPIKey                string
+	WeatherAPICities             []string
+	CurrencyAPIKey               string
+	OpenaiAPIKey                 string
+	GoogleSheetsAPIKey           string
+	GoogleSheetsAPISpreadSheetID string
 }
 
 func (b *Bot) Run() {
@@ -64,8 +66,10 @@ func (b *Bot) onMessage(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 		resp = getCurrentWeather(b.WeatherAPIKey, b.WeatherAPICities)
 	case strings.HasPrefix(strings.ToLower(message.Text), "!чат"):
 		resp = askChatGPT(b.OpenaiAPIKey, strings.TrimPrefix(message.Text, "!чат"))
+	case strings.HasPrefix(strings.ToLower(message.Text), "!продажи"):
+		resp = getYesterdaySales(b.GoogleSheetsAPIKey, b.GoogleSheetsAPISpreadSheetID)
 	case strings.HasPrefix(strings.ToLower(message.Text), "!команды"):
-		resp = "!пинг - проверка связи\n!время - текущее время у участников чата\n!погода - текущая погода\n!чат - вопрос к ChatGPT\n!команды - список доступных команд"
+		resp = "!пинг - проверка связи\n!время - текущее время у участников чата\n!погода - текущая погода\n!чат - вопрос к ChatGPT\n!команды - список доступных команд\n!продажи - текущие продажи из google spreadsheet"
 	case message.Location != nil && message.From != nil:
 		rememberTZ(message, b.DataDir)
 		return

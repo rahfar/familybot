@@ -24,6 +24,10 @@ var opts struct {
 	OpenaiAPI struct {
 		Key string `long:"key" env:"KEY"`
 	} `group:"openaiapi" namespace:"openaiapi" env-namespace:"OPENAIAPI"`
+	GoogleSheetsAPI struct {
+		Key           string `long:"key" env:"KEY"`
+		SpreadSheetID string `long:"spreadsheetid" env:"SPREADSHEETID"`
+	} `group:"googlesheetsapi" namespace:"googlesheetsapi" env-namespace:"GOOGLESHEETSAPI"`
 	DataDir string `long:"data_dir" env:"DATA_DIR" description:"path to data directory" default:"./data"`
 	Dbg     bool   `long:"debug" env:"DEBUG" description:"debug mode"`
 }
@@ -34,15 +38,17 @@ func main() {
 	}
 
 	bot := bot.Bot{
-		Token:            opts.Telegram.Token,
-		Dbg:              opts.Dbg,
-		GroupID:          opts.Telegram.GroupID,
-		DataDir:          opts.DataDir,
-		AdminChatID:      opts.Telegram.AdminChatID,
-		WeatherAPIKey:    opts.WeatherAPI.Key,
-		WeatherAPICities: strings.Split(opts.WeatherAPI.Cities, ","),
-		CurrencyAPIKey:   opts.CurrencyAPI.Key,
-		OpenaiAPIKey:     opts.OpenaiAPI.Key,
+		Token:                        opts.Telegram.Token,
+		Dbg:                          opts.Dbg,
+		GroupID:                      opts.Telegram.GroupID,
+		DataDir:                      opts.DataDir,
+		AdminChatID:                  opts.Telegram.AdminChatID,
+		WeatherAPIKey:                opts.WeatherAPI.Key,
+		WeatherAPICities:             strings.Split(opts.WeatherAPI.Cities, ","),
+		CurrencyAPIKey:               opts.CurrencyAPI.Key,
+		OpenaiAPIKey:                 opts.OpenaiAPI.Key,
+		GoogleSheetsAPIKey:           opts.GoogleSheetsAPI.Key,
+		GoogleSheetsAPISpreadSheetID: opts.GoogleSheetsAPI.SpreadSheetID,
 	}
 	bot.Run()
 }
