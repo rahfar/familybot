@@ -35,17 +35,18 @@ type ShopSales struct {
 
 const ShopsCnt = 5
 
-func CallGoogleSheetsApi(apikey, spreadsheetid string, day, month int) ([]ShopSales, error) {
-	result := make([]ShopSales, 0, ShopsCnt)
+func CallGoogleSheetsApi(apikey, spreadsheetid string, day, month int) ([]ShopSales, float64, error) {
+	sales := make([]ShopSales, 0, ShopsCnt)
+	var month_total float64
 	keyBytes, err := base64.StdEncoding.DecodeString(apikey)
 	if err != nil {
 		log.Println("[ERROR] Could not base64 decode apikey")
-		return nil, err
+		return nil, 0, err
 	}
 	config, err := google.JWTConfigFromJSON(keyBytes, sheets.SpreadsheetsReadonlyScope)
 	if err != nil {
 		log.Printf("[ERROR] Unable to create JWT config: %v\n", err)
-		return nil, err
+		return nil, 0, err
 	}
 
 	// Create a Sheets API client using the JWT config.
@@ -54,7 +55,7 @@ func CallGoogleSheetsApi(apikey, spreadsheetid string, day, month int) ([]ShopSa
 	sheetsService, err := sheets.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		log.Printf("[ERROR] Unable to create Sheets API client: %v\n", err)
-		return nil, err
+		return nil, 0, err
 	}
 
 	for i := 0; i < ShopsCnt; i++ {
@@ -75,19 +76,30 @@ func CallGoogleSheetsApi(apikey, spreadsheetid string, day, month int) ([]ShopSa
 			continue
 		}
 
-		if len(resp.Values) > 0 {
-			name := fmt.Sprint(resp.Values[0][0])
-			salestype := fmt.Sprint(resp.Values[0][1])
-			salesvalue, err := strconv.ParseFloat(fmt.Sprint(resp.Values[0][len(resp.Values[0])-1]), 64)
+		if len(resp.Values) == 0 {
+			continue
+		}
+
+		name := fmt.Sprint(resp.Values[0][0])
+		salestype := fmt.Sprint(resp.Values[0][1])
+		salesvalue, err := strconv.ParseFloat(fmt.Sprint(resp.Values[0][len(resp.Values[0])-1]), 64)
+		if err != nil {
+			log.Printf("[ERROR] Could not parse salesvalue: %v\n", err)
+			continue
+		}
+		for i := 2; i < len(resp.Values[0]); i++ {
+			salesvalue, err := strconv.ParseFloat(fmt.Sprint(resp.Values[0][i]), 64)
 			if err != nil {
 				log.Printf("[ERROR] Could not parse salesvalue: %v\n", err)
-				continue
+				month_total = 0
+				break
 			}
-			result = append(result, ShopSales{name, salestype, salesvalue})
+			month_total += salesvalue
 		}
+		sales = append(sales, ShopSales{name, salestype, salesvalue})
 	}
-	if len(result) == 0 {
-		return nil, fmt.Errorf("no data")
+	if len(sales) == 0 {
+		return nil, 0, fmt.Errorf("no data")
 	}
-	return result, nil
+	return sales, month_total, nil
 }
