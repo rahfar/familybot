@@ -152,3 +152,12 @@ func getYesterdaySales(apikey, spreadsheetid string) string {
 	resp += fmt.Sprintf("Итого с начала мес: %.2f₽\n", month_total)
 	return resp
 }
+
+func getAnecdote() string {
+	anecdote, err := apiclient.CallAnecdoteApi()
+	if err != nil {
+		log.Printf("[ERROR] error calling anecdote api: %v", err)
+		return "Не смог получить свежий анекдот :("
+	}
+	return anecdote
+}

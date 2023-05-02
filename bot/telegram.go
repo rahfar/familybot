@@ -68,8 +68,10 @@ func (b *Bot) onMessage(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 		resp = askChatGPT(b.OpenaiAPIKey, strings.TrimPrefix(message.Text, "!чат"))
 	case strings.HasPrefix(strings.ToLower(message.Text), "!продажи"):
 		resp = getYesterdaySales(b.GoogleSheetsAPIKey, b.GoogleSheetsAPISpreadSheetID)
+	case strings.HasPrefix(strings.ToLower(message.Text), "!анекдот"):
+		resp = getAnecdote()
 	case strings.HasPrefix(strings.ToLower(message.Text), "!команды"):
-		resp = "!пинг - проверка связи\n!время - текущее время у участников чата\n!погода - текущая погода\n!чат - вопрос к ChatGPT\n!команды - список доступных команд\n!продажи - текущие продажи из google spreadsheet"
+		resp = "!пинг - проверка связи\n!время - текущее время у участников чата\n!погода - текущая погода\n!чат - вопрос к ChatGPT\n!команды - список доступных команд\n!продажи - текущие продажи из google spreadsheet\n!анекдот - случайный анекдот"
 	case message.Location != nil && message.From != nil:
 		rememberTZ(message, b.DataDir)
 		return
