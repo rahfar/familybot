@@ -161,3 +161,16 @@ func getAnecdote() string {
 	}
 	return anecdote
 }
+
+func getLatestNews() string {
+	news, err := apiclient.CallKommersantAPI()
+	if (err != nil) || (len(news) == 0) {
+		log.Printf("[ERROR] error calling news api: %v", err)
+		return "Не смог получить последние новости :("
+	}
+	resp := "\nПоследние новости:\n"
+	for i, n := range news[:3] {
+		resp += fmt.Sprintf("%d. [%s](%s)\n", i+1, n.Title, n.Link)
+	}
+	return resp
+}

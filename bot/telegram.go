@@ -57,6 +57,7 @@ func (b *Bot) Run() {
 
 func (b *Bot) onMessage(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 	var resp string
+	var pm string
 	switch {
 	case strings.HasPrefix(strings.ToLower(message.Text), "!пинг"):
 		resp = ping(message)
@@ -70,8 +71,11 @@ func (b *Bot) onMessage(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 		resp = getYesterdaySales(b.GoogleSheetsAPIKey, b.GoogleSheetsAPISpreadSheetID)
 	case strings.HasPrefix(strings.ToLower(message.Text), "!анекдот"):
 		resp = getAnecdote()
+	case strings.HasPrefix(strings.ToLower(message.Text), "!новости"):
+		resp = getLatestNews()
+		pm = tgbotapi.ModeMarkdown
 	case strings.HasPrefix(strings.ToLower(message.Text), "!команды"):
-		resp = "!пинг - проверка связи\n!время - текущее время у участников чата\n!погода - текущая погода\n!чат - вопрос к ChatGPT\n!команды - список доступных команд\n!продажи - текущие продажи из google spreadsheet\n!анекдот - случайный анекдот"
+		resp = "!пинг - проверка связи\n!время - текущее время у участников чата\n!погода - текущая погода\n!чат - вопрос к ChatGPT\n!команды - список доступных команд\n!продажи - текущие продажи из google spreadsheet\n!анекдот - случайный анекдот\n!новости - последние 3 новости из Коммерсанта"
 	case message.Location != nil && message.From != nil:
 		rememberTZ(message, b.DataDir)
 		return
@@ -80,7 +84,7 @@ func (b *Bot) onMessage(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 	}
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, resp)
-
+	msg.ParseMode = pm
 	if _, err := bot_api.Send(msg); err != nil {
 		log.Panic(err)
 	}
@@ -127,9 +131,11 @@ func (b *Bot) mourningJob(bot_api *tgbotapi.BotAPI) {
 				text += fmt.Sprintf("    %s: %.1f°C, %s\n", w.Location.Name, w.CurrentWeather.Temp, w.CurrentWeather.Condition.Text)
 			}
 		}
+		//call news api
+		text += getLatestNews()
 		// send message to group
 		msg := tgbotapi.NewMessage(b.GroupID, text)
-
+		msg.ParseMode = tgbotapi.ModeMarkdown
 		if _, err := bot_api.Send(msg); err != nil {
 			log.Panic(err)
 		}
