@@ -6,6 +6,7 @@ require (
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/sashabaranov/go-openai v1.9.0
+	golang.org/x/net v0.9.0
 	golang.org/x/oauth2 v0.7.0
 	google.golang.org/api v0.120.0
 	gopkg.in/ugjka/go-tz.v2 v2.0.14
@@ -22,7 +23,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/net v0.9.0 // indirect
 	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
