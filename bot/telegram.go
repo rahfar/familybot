@@ -51,7 +51,7 @@ func (b *Bot) Run() {
 			log.Printf("[INFO] Skip message from unsupported chat. Chat: %+v\n", *update.Message.Chat)
 			continue
 		}
-		b.onMessage(*update.Message, bot_api)
+		go b.onMessage(*update.Message, bot_api)
 	}
 }
 
