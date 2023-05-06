@@ -85,6 +85,7 @@ func (b *Bot) onMessage(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, resp)
 	msg.ParseMode = pm
+	msg.ReplyToMessageID = message.MessageID
 	if _, err := bot_api.Send(msg); err != nil {
 		log.Panic(err)
 	}
