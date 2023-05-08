@@ -112,13 +112,13 @@ func rememberTZ(message tgbotapi.Message, data_dir string) {
 
 func getCurrentWeather(apikey string, cities []string) string {
 	resp := ""
-	weather := apiclient.Get_weather(apikey, cities)
+	weather := apiclient.GetWeather(apikey, cities)
 	sort.Slice(weather, func(i, j int) bool {
-		return weather[i].CurrentWeather.Temp < weather[j].CurrentWeather.Temp
+		return weather[i].Current.Temp < weather[j].Current.Temp
 	})
 	if len(weather) > 0 {
 		for _, w := range weather {
-			resp += fmt.Sprintf("%s: %.1f°C, %s\n", w.Location.Name, w.CurrentWeather.Temp, w.CurrentWeather.Condition.Text)
+			resp += fmt.Sprintf("%s: %+g°C (max: %+g°C, min: %+g°C), %s\n", w.Location.Name, w.Current.Temp, w.Forecast.Forecastday[0].Day.Maxtemp_c, w.Forecast.Forecastday[0].Day.Mintemp_c, w.Current.Condition.Text)
 		}
 		return resp
 	} else {
