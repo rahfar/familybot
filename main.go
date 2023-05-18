@@ -10,9 +10,9 @@ import (
 
 var opts struct {
 	Telegram struct {
-		Token       string `long:"token" env:"TOKEN" description:"telegram bot token" default:"test"`
-		GroupID     int64  `long:"group" env:"GROUP" description:"group id" default:"0"`
-		AdminChatID int64  `long:"admin_chat" env:"ADMIN_CHAT" description:"admin chat id" default:"0"`
+		Token   string `long:"token" env:"TOKEN" description:"telegram bot token" default:"test"`
+		GroupID int64  `long:"group" env:"GROUP" description:"group id"`
+		Chats   string `long:"chats" env:"CHATS" description:"acceptable usernames" default:""`
 	} `group:"telegram" namespace:"telegram" env-namespace:"TELEGRAM"`
 	WeatherAPI struct {
 		Key    string `long:"key" env:"KEY"`
@@ -41,8 +41,8 @@ func main() {
 		Token:                        opts.Telegram.Token,
 		Dbg:                          opts.Dbg,
 		GroupID:                      opts.Telegram.GroupID,
+		Chats:                        strings.Split(opts.Telegram.Chats, ","),
 		DataDir:                      opts.DataDir,
-		AdminChatID:                  opts.Telegram.AdminChatID,
 		WeatherAPIKey:                opts.WeatherAPI.Key,
 		WeatherAPICities:             strings.Split(opts.WeatherAPI.Cities, ","),
 		CurrencyAPIKey:               opts.CurrencyAPI.Key,

@@ -15,8 +15,8 @@ import (
 type Bot struct {
 	Token                        string
 	Dbg                          bool
+	Chats                        []string
 	GroupID                      int64
-	AdminChatID                  int64
 	DataDir                      string
 	WeatherAPIKey                string
 	WeatherAPICities             []string
@@ -36,6 +36,11 @@ func (b *Bot) Run() {
 
 	log.Printf("[INFO] Authorized on account %s", bot_api.Self.UserName)
 
+	usernames := make(map[string]struct{}, 0)
+	for _, username := range b.Chats {
+		usernames[username] = struct{}{}
+	}
+
 	go b.mourningJob(bot_api)
 
 	update_cfg := tgbotapi.NewUpdate(0)
@@ -47,7 +52,9 @@ func (b *Bot) Run() {
 		if update.Message == nil || update.Message.Chat == nil {
 			continue
 		}
-		if update.Message.Chat.ID != b.GroupID && update.Message.Chat.ID != b.AdminChatID {
+		_, ok := usernames[update.Message.Chat.UserName]
+		ok = ok || update.Message.Chat.ID == b.GroupID
+		if !ok {
 			log.Printf("[INFO] Skip message from unsupported chat. Chat: %+v\n", *update.Message.Chat)
 			continue
 		}
