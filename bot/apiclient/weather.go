@@ -7,7 +7,14 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 )
+
+type WeatherAPI struct {
+	ApiKey     string
+	Cities     string
+	HttpClient *http.Client
+}
 
 type Weather struct {
 	Location struct {
@@ -30,10 +37,11 @@ type Weather struct {
 	} `json:"forecast"`
 }
 
-func GetWeather(apikey string, cities []string) []Weather {
+func (w *WeatherAPI) GetWeather() []Weather {
 	weather := make([]Weather, 0)
+	cities := strings.Split(w.Cities, ",")
 	for _, city := range cities {
-		w, err := callCurrentApi(apikey, city)
+		w, err := w.callCurrentApi(city)
 		if err != nil {
 			log.Printf("[WARN] Could not get weather for %s: %v\n", city, err)
 		} else {
@@ -43,10 +51,10 @@ func GetWeather(apikey string, cities []string) []Weather {
 	return weather
 }
 
-func callCurrentApi(apikey string, city string) (*Weather, error) {
+func (w *WeatherAPI) callCurrentApi(city string) (*Weather, error) {
 	base_url := "https://api.weatherapi.com/v1/forecast.json"
-	query_str := fmt.Sprintf("?key=%s&q=%s&lang=ru&days=1&aqi=no&alerts=no", apikey, url.QueryEscape(city))
-	resp, err := http.Get(base_url + query_str)
+	query_str := fmt.Sprintf("?key=%s&q=%s&lang=ru&days=1&aqi=no&alerts=no", w.ApiKey, url.QueryEscape(city))
+	resp, err := w.HttpClient.Get(base_url + query_str)
 	if err != nil {
 		return nil, err
 	}
@@ -58,10 +66,10 @@ func callCurrentApi(apikey string, city string) (*Weather, error) {
 	if resp.StatusCode/100 != 2 {
 		return nil, fmt.Errorf("non 2** HTTP status code: %d - %s - %s", resp.StatusCode, resp.Status, string(body))
 	}
-	var w Weather
-	err = json.Unmarshal(body, &w)
+	var weather Weather
+	err = json.Unmarshal(body, &weather)
 	if err != nil {
 		return nil, err
 	}
-	return &w, nil
+	return &weather, nil
 }

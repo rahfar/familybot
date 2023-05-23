@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+type ExchangeAPI struct {
+	ApiKey     string
+	HttpClient *http.Client
+}
+
 type ExchangeRates struct {
 	Meta struct {
 		Update_time time.Time `json:"last_updated_at"`
@@ -26,10 +31,10 @@ type ExchangeRates struct {
 	} `json:"data"`
 }
 
-func GetExchangeRates(apikey string) (*ExchangeRates, error) {
+func (e *ExchangeAPI) GetExchangeRates() (*ExchangeRates, error) {
 	base_url := "https://api.currencyapi.com/v3/latest"
-	query_str := fmt.Sprintf("?apikey=%s", apikey)
-	resp, err := http.Get(base_url + query_str)
+	query_str := fmt.Sprintf("?apikey=%s", e.ApiKey)
+	resp, err := e.HttpClient.Get(base_url + query_str)
 	if err != nil {
 		return nil, err
 	}
@@ -50,10 +55,10 @@ func GetExchangeRates(apikey string) (*ExchangeRates, error) {
 	return &xr, nil
 }
 
-func GetHistoryExchangeRates(apikey string, datetime time.Time) (*ExchangeRates, error) {
+func (e *ExchangeAPI) GetHistoryExchangeRates(datetime time.Time) (*ExchangeRates, error) {
 	base_url := "https://api.currencyapi.com/v3/historical"
-	query_str := fmt.Sprintf("?apikey=%s&date=%s", apikey, datetime.Format("2006-01-02"))
-	resp, err := http.Get(base_url + query_str)
+	query_str := fmt.Sprintf("?apikey=%s&date=%s", e.ApiKey, datetime.Format("2006-01-02"))
+	resp, err := e.HttpClient.Get(base_url + query_str)
 	if err != nil {
 		return nil, err
 	}

@@ -11,8 +11,9 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/rahfar/familybot/bot/apiclient"
 	"gopkg.in/ugjka/go-tz.v2/tz"
+
+	"github.com/rahfar/familybot/bot/apiclient"
 )
 
 const user_timezone_file = "user_timezone.json"
@@ -110,9 +111,9 @@ func rememberTZ(message tgbotapi.Message, data_dir string) {
 	}
 }
 
-func getCurrentWeather(apikey string, cities []string) string {
+func getCurrentWeather(w *apiclient.WeatherAPI) string {
 	resp := ""
-	weather := apiclient.GetWeather(apikey, cities)
+	weather := w.GetWeather()
 	sort.Slice(weather, func(i, j int) bool {
 		return weather[i].Current.Temp < weather[j].Current.Temp
 	})
@@ -126,9 +127,9 @@ func getCurrentWeather(apikey string, cities []string) string {
 	}
 }
 
-func askChatGPT(apikey, question string) string {
+func askChatGPT(o *apiclient.OpenaiAPI, question string) string {
 	question = strings.TrimSpace(question)
-	resp, err := apiclient.CallOpenai(apikey, question)
+	resp, err := o.CallOpenai(question)
 	if err != nil || len(resp) == 0 {
 		log.Printf("[ERROR] Error occured while call openai: %v", err)
 		return "Ошибка при вызове ChatGPT :("
@@ -136,9 +137,9 @@ func askChatGPT(apikey, question string) string {
 	return resp
 }
 
-func getYesterdaySales(apikey, spreadsheetid string) string {
+func getYesterdaySales(s *apiclient.SheetsAPI) string {
 	yesterday := time.Now().Add(-24 * time.Hour)
-	sales, month_total, err := apiclient.CallGoogleSheetsApi(apikey, spreadsheetid, yesterday.Day(), int(yesterday.Month()))
+	sales, month_total, err := s.CallGoogleSheetsApi(yesterday.Day(), int(yesterday.Month()))
 	total := 0.0
 	if err != nil {
 		return "Возникла ошибка при чтении данных :("
@@ -153,8 +154,8 @@ func getYesterdaySales(apikey, spreadsheetid string) string {
 	return resp
 }
 
-func getAnecdote() string {
-	anecdote, err := apiclient.CallAnecdoteApi()
+func getAnecdote(a *apiclient.AnecdoteAPI) string {
+	anecdote, err := a.CallAnecdoteApi()
 	if err != nil {
 		log.Printf("[ERROR] error calling anecdote api: %v", err)
 		return "Не смог получить свежий анекдот :("
@@ -162,8 +163,8 @@ func getAnecdote() string {
 	return anecdote
 }
 
-func getLatestNews() string {
-	news, err := apiclient.CallKommersantAPI()
+func getLatestNews(k *apiclient.KommersantAPI) string {
+	news, err := k.CallKommersantAPI()
 	if (err != nil) || (len(news) == 0) {
 		log.Printf("[ERROR] error calling news api: %v", err)
 		return "Не смог получить последние новости :("

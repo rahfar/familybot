@@ -12,6 +12,11 @@ import (
 	"google.golang.org/api/sheets/v4"
 )
 
+type SheetsAPI struct {
+	ApiKey        string
+	SpreadsheetId string
+}
+
 var monthname = map[int]string{
 	1:  "Январь",
 	2:  "Февраль",
@@ -35,10 +40,10 @@ type ShopSales struct {
 
 const ShopsCnt = 5
 
-func CallGoogleSheetsApi(apikey, spreadsheetid string, day, month int) ([]ShopSales, float64, error) {
+func (s *SheetsAPI) CallGoogleSheetsApi(day, month int) ([]ShopSales, float64, error) {
 	sales := make([]ShopSales, 0, ShopsCnt)
 	var month_total float64
-	keyBytes, err := base64.StdEncoding.DecodeString(apikey)
+	keyBytes, err := base64.StdEncoding.DecodeString(s.ApiKey)
 	if err != nil {
 		log.Println("[ERROR] Could not base64 decode apikey")
 		return nil, 0, err
@@ -70,7 +75,7 @@ func CallGoogleSheetsApi(apikey, spreadsheetid string, day, month int) ([]ShopSa
 		)
 
 		// Make the API request to retrieve the values in the specified cells.
-		resp, err := sheetsService.Spreadsheets.Values.Get(spreadsheetid, cellRange).ValueRenderOption("UNFORMATTED_VALUE").Do()
+		resp, err := sheetsService.Spreadsheets.Values.Get(s.SpreadsheetId, cellRange).ValueRenderOption("UNFORMATTED_VALUE").Do()
 		if err != nil {
 			log.Printf("[ERROR] Unable to retrieve values: %v\n", err)
 			continue

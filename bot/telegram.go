@@ -12,41 +12,38 @@ import (
 	"github.com/rahfar/familybot/bot/apiclient"
 )
 
+type tgBotAPI interface {
+	GetUpdatesChan(config tgbotapi.UpdateConfig) tgbotapi.UpdatesChannel
+	Send(c tgbotapi.Chattable) (tgbotapi.Message, error)
+}
+
 type Bot struct {
-	Token                        string
-	Dbg                          bool
-	Chats                        []string
-	GroupID                      int64
-	DataDir                      string
-	WeatherAPIKey                string
-	WeatherAPICities             []string
-	CurrencyAPIKey               string
-	OpenaiAPIKey                 string
-	GoogleSheetsAPIKey           string
-	GoogleSheetsAPISpreadSheetID string
+	Token         string
+	Dbg           bool
+	Chats         []string
+	GroupID       int64
+	DataDir       string
+	TGBotAPI      tgBotAPI
+	AnekdotAPI    *apiclient.AnecdoteAPI
+	ExchangeAPI   *apiclient.ExchangeAPI
+	SheetsAPI     *apiclient.SheetsAPI
+	KommersantAPI *apiclient.KommersantAPI
+	OpenaiAPI     *apiclient.OpenaiAPI
+	WeatherAPI    *apiclient.WeatherAPI
 }
 
 func (b *Bot) Run() {
-	bot_api, err := tgbotapi.NewBotAPI(b.Token)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	bot_api.Debug = b.Dbg
-
-	log.Printf("[INFO] Authorized on account %s", bot_api.Self.UserName)
-
 	usernames := make(map[string]struct{}, 0)
 	for _, username := range b.Chats {
 		usernames[username] = struct{}{}
 	}
 
-	go b.mourningJob(bot_api)
+	go b.mourningJob()
 
 	update_cfg := tgbotapi.NewUpdate(0)
 	update_cfg.Timeout = 60
 
-	updates := bot_api.GetUpdatesChan(update_cfg)
+	updates := b.TGBotAPI.GetUpdatesChan(update_cfg)
 
 	for update := range updates {
 		if update.Message == nil || update.Message.Chat == nil {
@@ -58,11 +55,11 @@ func (b *Bot) Run() {
 			log.Printf("[INFO] Skip message from unsupported chat. Chat: %+v\n", *update.Message.Chat)
 			continue
 		}
-		go b.onMessage(*update.Message, bot_api)
+		go b.onMessage(*update.Message)
 	}
 }
 
-func (b *Bot) onMessage(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
+func (b *Bot) onMessage(message tgbotapi.Message) {
 	var resp string
 	var pm string
 	switch {
@@ -71,15 +68,15 @@ func (b *Bot) onMessage(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 	case strings.HasPrefix(strings.ToLower(message.Text), "!время"):
 		resp = getUsersCurrentTime(b.DataDir)
 	case strings.HasPrefix(strings.ToLower(message.Text), "!погода"):
-		resp = getCurrentWeather(b.WeatherAPIKey, b.WeatherAPICities)
+		resp = getCurrentWeather(b.WeatherAPI)
 	case strings.HasPrefix(strings.ToLower(message.Text), "!чат"):
-		resp = askChatGPT(b.OpenaiAPIKey, strings.TrimPrefix(message.Text, "!чат"))
+		resp = askChatGPT(b.OpenaiAPI, strings.TrimPrefix(message.Text, "!чат"))
 	case strings.HasPrefix(strings.ToLower(message.Text), "!продажи"):
-		resp = getYesterdaySales(b.GoogleSheetsAPIKey, b.GoogleSheetsAPISpreadSheetID)
+		resp = getYesterdaySales(b.SheetsAPI)
 	case strings.HasPrefix(strings.ToLower(message.Text), "!анекдот"):
-		resp = getAnecdote()
+		resp = getAnecdote(b.AnekdotAPI)
 	case strings.HasPrefix(strings.ToLower(message.Text), "!новости"):
-		resp = getLatestNews()
+		resp = getLatestNews(b.KommersantAPI)
 		pm = tgbotapi.ModeMarkdown
 	case strings.HasPrefix(strings.ToLower(message.Text), "!команды"):
 		resp = "!пинг - проверка связи\n!время - текущее время у участников чата\n!погода - текущая погода\n!чат - вопрос к ChatGPT\n!команды - список доступных команд\n!продажи - текущие продажи из google spreadsheet\n!анекдот - случайный анекдот\n!новости - последние 3 новости из Коммерсанта"
@@ -93,19 +90,19 @@ func (b *Bot) onMessage(message tgbotapi.Message, bot_api *tgbotapi.BotAPI) {
 	msg := tgbotapi.NewMessage(message.Chat.ID, resp)
 	msg.ParseMode = pm
 	msg.ReplyToMessageID = message.MessageID
-	if _, err := bot_api.Send(msg); err != nil {
+	if _, err := b.TGBotAPI.Send(msg); err != nil {
 		log.Panic(err)
 	}
 }
 
-func (b *Bot) mourningJob(bot_api *tgbotapi.BotAPI) {
+func (b *Bot) mourningJob() {
 	log.Println("[INFO] Starting mourning job")
 	for {
 		text := "Доброе утро! 🌅\n"
 		waitUntilMourning()
 		// call currency api
-		xr_today, err1 := apiclient.GetExchangeRates(b.CurrencyAPIKey)
-		xr_yesterday, err2 := apiclient.GetHistoryExchangeRates(b.CurrencyAPIKey, time.Now().UTC().Add(-48*time.Hour))
+		xr_today, err1 := b.ExchangeAPI.GetExchangeRates()
+		xr_yesterday, err2 := b.ExchangeAPI.GetHistoryExchangeRates(time.Now().UTC().Add(-48 * time.Hour))
 		switch {
 		case err1 != nil:
 			log.Printf("[ERROR] Could not get currency exchange rates: %v", err1)
@@ -129,7 +126,7 @@ func (b *Bot) mourningJob(bot_api *tgbotapi.BotAPI) {
 			)
 		}
 		// call weather api
-		weather := apiclient.GetWeather(b.WeatherAPIKey, b.WeatherAPICities)
+		weather := b.WeatherAPI.GetWeather()
 		sort.Slice(weather, func(i, j int) bool {
 			return weather[i].Current.Temp < weather[j].Current.Temp
 		})
@@ -140,11 +137,11 @@ func (b *Bot) mourningJob(bot_api *tgbotapi.BotAPI) {
 			}
 		}
 		//call news api
-		text += getLatestNews()
+		text += getLatestNews(b.KommersantAPI)
 		// send message to group
 		msg := tgbotapi.NewMessage(b.GroupID, text)
 		msg.ParseMode = tgbotapi.ModeMarkdown
-		if _, err := bot_api.Send(msg); err != nil {
+		if _, err := b.TGBotAPI.Send(msg); err != nil {
 			log.Panic(err)
 		}
 	}

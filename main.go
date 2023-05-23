@@ -2,10 +2,15 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"strings"
+	"time"
 
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/jessevdk/go-flags"
+
 	"github.com/rahfar/familybot/bot"
+	"github.com/rahfar/familybot/bot/apiclient"
 )
 
 var opts struct {
@@ -37,18 +42,38 @@ func main() {
 		log.Fatal("[ERROR] Error parsing options")
 	}
 
+	bot_api, err := tgbotapi.NewBotAPI(opts.Telegram.Token)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	bot_api.Debug = opts.Dbg
+
+	log.Printf("[INFO] Authorized on account %s", bot_api.Self.UserName)
+
+	httpClient := &http.Client{Timeout: 5 * time.Second}
+	openaiHttpClient := &http.Client{Timeout: 60 * time.Second}
+
+	anekdotAPI := &apiclient.AnecdoteAPI{HttpClient: httpClient}
+	exchangeAPI := &apiclient.ExchangeAPI{ApiKey: opts.CurrencyAPI.Key, HttpClient: httpClient}
+	sheetsAPI := &apiclient.SheetsAPI{ApiKey: opts.GoogleSheetsAPI.Key, SpreadsheetId: opts.GoogleSheetsAPI.SpreadSheetID}
+	kommerstantAPI := &apiclient.KommersantAPI{HttpClient: httpClient}
+	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: openaiHttpClient}
+	weatherAPI := &apiclient.WeatherAPI{ApiKey: opts.WeatherAPI.Key, Cities: opts.WeatherAPI.Cities, HttpClient: httpClient}
+
 	bot := bot.Bot{
-		Token:                        opts.Telegram.Token,
-		Dbg:                          opts.Dbg,
-		GroupID:                      opts.Telegram.GroupID,
-		Chats:                        strings.Split(opts.Telegram.Chats, ","),
-		DataDir:                      opts.DataDir,
-		WeatherAPIKey:                opts.WeatherAPI.Key,
-		WeatherAPICities:             strings.Split(opts.WeatherAPI.Cities, ","),
-		CurrencyAPIKey:               opts.CurrencyAPI.Key,
-		OpenaiAPIKey:                 opts.OpenaiAPI.Key,
-		GoogleSheetsAPIKey:           opts.GoogleSheetsAPI.Key,
-		GoogleSheetsAPISpreadSheetID: opts.GoogleSheetsAPI.SpreadSheetID,
+		Token:         opts.Telegram.Token,
+		Dbg:           opts.Dbg,
+		GroupID:       opts.Telegram.GroupID,
+		Chats:         strings.Split(opts.Telegram.Chats, ","),
+		DataDir:       opts.DataDir,
+		AnekdotAPI:    anekdotAPI,
+		ExchangeAPI:   exchangeAPI,
+		SheetsAPI:     sheetsAPI,
+		KommersantAPI: kommerstantAPI,
+		OpenaiAPI:     openaiAPI,
+		WeatherAPI:    weatherAPI,
+		TGBotAPI:      bot_api,
 	}
 	bot.Run()
 }

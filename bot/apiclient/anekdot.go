@@ -7,14 +7,18 @@ import (
 	"net/http"
 )
 
+type AnecdoteAPI struct {
+	HttpClient *http.Client
+}
+
 type Anecdote struct {
 	Category string `json:"category"`
 	Content  string `json:"content"`
 }
 
-func CallAnecdoteApi() (string, error) {
+func (a *AnecdoteAPI) CallAnecdoteApi() (string, error) {
 	base_url := "https://jokesrv.rubedo.cloud/"
-	resp, err := http.Get(base_url)
+	resp, err := a.HttpClient.Get(base_url)
 	if err != nil {
 		return "", err
 	}
@@ -26,10 +30,10 @@ func CallAnecdoteApi() (string, error) {
 	if resp.StatusCode/100 != 2 {
 		return "", fmt.Errorf("non 2** HTTP status code: %d - %s - %s", resp.StatusCode, resp.Status, string(body))
 	}
-	var a Anecdote
+	var an Anecdote
 	err = json.Unmarshal(body, &a)
 	if err != nil {
 		return "", err
 	}
-	return a.Content, nil
+	return an.Content, nil
 }

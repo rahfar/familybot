@@ -7,6 +7,10 @@ import (
 	"net/http"
 )
 
+type KommersantAPI struct {
+	HttpClient *http.Client
+}
+
 type Rss struct {
 	XMLName xml.Name `xml:"rss"`
 	Version string   `xml:"version,attr"`
@@ -40,9 +44,9 @@ type Item struct {
 	Description string `xml:"description"`
 }
 
-func CallKommersantAPI() ([]Item, error) {
+func (k *KommersantAPI) CallKommersantAPI() ([]Item, error) {
 	base_url := "https://www.kommersant.ru/RSS/news.xml"
-	resp, err := http.Get(base_url)
+	resp, err := k.HttpClient.Get(base_url)
 	if err != nil {
 		return nil, err
 	}
