@@ -62,6 +62,7 @@ func (b *Bot) Run() {
 func (b *Bot) onMessage(message tgbotapi.Message) {
 	var resp string
 	var pm string
+	var disable_web_page_preview bool
 	switch {
 	case strings.HasPrefix(strings.ToLower(message.Text), "!пинг"):
 		resp = ping(message)
@@ -78,6 +79,7 @@ func (b *Bot) onMessage(message tgbotapi.Message) {
 	case strings.HasPrefix(strings.ToLower(message.Text), "!новости"):
 		resp = getLatestNews(b.KommersantAPI)
 		pm = tgbotapi.ModeMarkdown
+		disable_web_page_preview = true
 	case strings.HasPrefix(strings.ToLower(message.Text), "!команды"):
 		resp = "!пинг - проверка связи\n!время - текущее время у участников чата\n!погода - текущая погода\n!чат - вопрос к ChatGPT\n!команды - список доступных команд\n!продажи - текущие продажи из google spreadsheet\n!анекдот - случайный анекдот\n!новости - последние 3 новости из Коммерсанта"
 	case message.Location != nil && message.From != nil:
@@ -89,6 +91,7 @@ func (b *Bot) onMessage(message tgbotapi.Message) {
 
 	msg := tgbotapi.NewMessage(message.Chat.ID, resp)
 	msg.ParseMode = pm
+	msg.DisableWebPagePreview = disable_web_page_preview
 	msg.ReplyToMessageID = message.MessageID
 	if _, err := b.TGBotAPI.Send(msg); err != nil {
 		log.Panic(err)
@@ -141,6 +144,7 @@ func (b *Bot) mourningJob() {
 		// send message to group
 		msg := tgbotapi.NewMessage(b.GroupID, text)
 		msg.ParseMode = tgbotapi.ModeMarkdown
+		msg.DisableWebPagePreview = true
 		if _, err := b.TGBotAPI.Send(msg); err != nil {
 			log.Panic(err)
 		}
