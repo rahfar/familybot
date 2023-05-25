@@ -139,19 +139,11 @@ func askChatGPT(o *apiclient.OpenaiAPI, question string) string {
 
 func getYesterdaySales(s *apiclient.SheetsAPI) string {
 	yesterday := time.Now().Add(-24 * time.Hour)
-	sales, month_total, err := s.CallGoogleSheetsApi(yesterday.Day(), int(yesterday.Month()))
-	total := 0.0
+	_, month_total, err := s.CallGoogleSheetsApi(yesterday.Day(), int(yesterday.Month()))
 	if err != nil {
 		return "Возникла ошибка при чтении данных :("
 	}
-	resp := "Продажи за вчера:\n"
-	for _, sale := range sales {
-		total += sale.SalesValue
-		resp += fmt.Sprintf("    %s - %s - %.2f₽\n", sale.Name, sale.SalesType, sale.SalesValue)
-	}
-	resp += fmt.Sprintf("Итого: %.2f₽\n", total)
-	resp += fmt.Sprintf("Итого с начала мес: %.2f₽\n", month_total)
-	return resp
+	return fmt.Sprintf("Продажи с начала мес: %.2f₽\n", month_total)
 }
 
 func getAnecdote(a *apiclient.AnecdoteAPI) string {
