@@ -119,7 +119,7 @@ func (b *Bot) mourningJob() {
 			EURRUB_yesterday := xr_yesterday.Data.RUB.Value / xr_yesterday.Data.EUR.Value
 			BTCUSD_yesterday := 1.0 / xr_yesterday.Data.BTC.Value
 
-			text += fmt.Sprintf("\nКурсы валют:\n    USD %.2f₽ (%.2f%%) \n    EUR %.2f₽ (%.2f%%)\n    BTC %.2f$ (%.2f%%)\n",
+			text += fmt.Sprintf("\nКурсы валют:\n    USD %.2f₽ (%+.2f%%) \n    EUR %.2f₽ (%+.2f%%)\n    BTC %.2f$ (%+.2f%%)\n",
 				USDRUB_today,
 				(USDRUB_today/USDRUB_yesterday-1)*100,
 				EURRUB_today,
