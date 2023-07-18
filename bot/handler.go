@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"path"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -129,7 +131,7 @@ func getCurrentWeather(w *apiclient.WeatherAPI) string {
 
 func askChatGPT(o *apiclient.OpenaiAPI, question string) string {
 	question = strings.TrimSpace(question)
-	resp, err := o.CallOpenai(question)
+	resp, err := o.CallGPT3dot5(question)
 	if err != nil || len(resp) == 0 {
 		log.Printf("[ERROR] Error occured while call openai: %v", err)
 		return "Ошибка при вызове ChatGPT :("
@@ -166,4 +168,45 @@ func getLatestNews(k *apiclient.KommersantAPI) string {
 		resp += fmt.Sprintf("%d. [%s](%s)\n", i+1, n.Title, n.Link)
 	}
 	return resp
+}
+
+func transcriptVoice(s *apiclient.OpenaiAPI, b *tgbotapi.BotAPI, FileID string) string {
+	
+	// Get direct link to audio message
+	link, err := b.GetFileDirectURL(FileID)
+	if err != nil {
+		log.Printf("[ERROR] getting voice msg: %v", err)
+		return "Ошибка при скачивании голосового сообщения"
+		
+	}
+	filename := "/tmp/" + FileID + path.Ext(link)
+	log.Printf("[DEBUG] audio filename: %s", filename)
+	// Download audio file
+	resp, err := http.Get(link)
+	if err != nil {
+		log.Printf("[ERROR] getting voice msg: %v", err)
+		return "Ошибка при скачивании голосового сообщения"
+	}
+	defer resp.Body.Close()
+
+	// Create the output file
+	file, err := os.Create(filename)
+	if err != nil {
+		return "Ошибка при скачивании голосового сообщения"
+	}
+	defer file.Close()
+	defer os.Remove(filename)
+
+	// Write the response body to the file
+	_, err = io.Copy(file, resp.Body)
+	if err != nil {
+		return "Ошибка при скачивании голосового сообщения"
+	}
+
+	text, err := s.CallWhisper(filename)
+	if err != nil {
+		log.Printf("[ERROR] getting voice msg: %v", err)
+		return "Ошибка при обработки голосового сообщения"
+	}
+	return text
 }

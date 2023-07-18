@@ -12,24 +12,19 @@ import (
 	"github.com/rahfar/familybot/bot/apiclient"
 )
 
-type tgBotAPI interface {
-	GetUpdatesChan(config tgbotapi.UpdateConfig) tgbotapi.UpdatesChannel
-	Send(c tgbotapi.Chattable) (tgbotapi.Message, error)
-}
-
 type Bot struct {
-	Token         string
-	Dbg           bool
-	Chats         []string
-	GroupID       int64
-	DataDir       string
-	TGBotAPI      tgBotAPI
-	AnekdotAPI    *apiclient.AnecdoteAPI
-	ExchangeAPI   *apiclient.ExchangeAPI
-	SheetsAPI     *apiclient.SheetsAPI
-	KommersantAPI *apiclient.KommersantAPI
-	OpenaiAPI     *apiclient.OpenaiAPI
-	WeatherAPI    *apiclient.WeatherAPI
+	Token           string
+	Dbg             bool
+	Chats           []string
+	GroupID         int64
+	DataDir         string
+	TGBotAPI        *tgbotapi.BotAPI
+	AnekdotAPI      *apiclient.AnecdoteAPI
+	ExchangeAPI     *apiclient.ExchangeAPI
+	SheetsAPI       *apiclient.SheetsAPI
+	KommersantAPI   *apiclient.KommersantAPI
+	OpenaiAPI       *apiclient.OpenaiAPI
+	WeatherAPI      *apiclient.WeatherAPI
 }
 
 func (b *Bot) Run() {
@@ -82,6 +77,8 @@ func (b *Bot) onMessage(message tgbotapi.Message) {
 		disable_web_page_preview = true
 	case strings.HasPrefix(strings.ToLower(message.Text), "!команды"):
 		resp = "!пинг - проверка связи\n!время - текущее время у участников чата\n!погода - текущая погода\n!чат - вопрос к ChatGPT\n!команды - список доступных команд\n!продажи - текущие продажи из google spreadsheet\n!анекдот - случайный анекдот\n!новости - последние 3 новости из Коммерсанта"
+	case message.Voice != nil:
+		resp = transcriptVoice(b.OpenaiAPI, b.TGBotAPI, message.Voice.FileID)
 	case message.Location != nil && message.From != nil:
 		rememberTZ(message, b.DataDir)
 		return

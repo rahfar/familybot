@@ -2,6 +2,7 @@ name: familybot
 services:
   familybot:
     image: ghcr.io/rahfar/familybot
+    build: '..'
     container_name: familybot
     environment:
       - TZ=Europe/Helsinki
