@@ -1,0 +1,17 @@
+name: familybot
+services:
+  familybot:
+    image: ghcr.io/rahfar/familybot
+    container_name: familybot
+    environment:
+      - TZ=Europe/Helsinki
+      - TELEGRAM_GROUP
+      - TELEGRAM_CHATS
+      - TELEGRAM_TOKEN
+      - WEATHERAPI_KEY
+      - WEATHERAPI_CITIES
+      - CURRENCYAPI_KEY
+      - OPENAIAPI_KEY
+      - GOOGLESHEETSAPI_KEY
+      - GOOGLESHEETSAPI_SPREADSHEETID
+    restart: unless-stopped
