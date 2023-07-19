@@ -6,8 +6,8 @@ on:
       - master
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
+  build-and-deploy:
+    runs-on: self-hosted
 
     steps:
     - uses: actions/checkout@v3
