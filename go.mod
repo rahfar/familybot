@@ -9,7 +9,6 @@ require (
 	golang.org/x/net v0.10.0
 	golang.org/x/oauth2 v0.8.0
 	google.golang.org/api v0.125.0
-	gopkg.in/ugjka/go-tz.v2 v2.0.14
 )
 
 require (
