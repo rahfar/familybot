@@ -31,7 +31,7 @@ func (a *AnecdoteAPI) CallAnecdoteApi() (string, error) {
 		return "", fmt.Errorf("non 2** HTTP status code: %d - %s - %s", resp.StatusCode, resp.Status, string(body))
 	}
 	var an Anecdote
-	err = json.Unmarshal(body, &a)
+	err = json.Unmarshal(body, &an)
 	if err != nil {
 		return "", err
 	}
