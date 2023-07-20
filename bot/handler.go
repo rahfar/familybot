@@ -81,7 +81,6 @@ func getLatestNews(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 }
 
 func transcriptVoice(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
-
 	// Get direct link to audio message
 	link, err := bot.TGBotAPI.GetFileDirectURL(msg.Voice.FileID)
 	if err != nil {
