@@ -17,7 +17,7 @@ type Bot struct {
 	Dbg           bool
 	Chats         []string
 	GroupID       int64
-	DataDir       string
+	Commands      []Command
 	TGBotAPI      *tgbotapi.BotAPI
 	AnekdotAPI    *apiclient.AnecdoteAPI
 	ExchangeAPI   *apiclient.ExchangeAPI
@@ -54,38 +54,23 @@ func (b *Bot) Run() {
 	}
 }
 
-func (b *Bot) onMessage(message tgbotapi.Message) {
-	var resp string
-	var pm string
-	var disable_web_page_preview bool
-	switch {
-	case strings.HasPrefix(strings.ToLower(message.Text), "!пинг"):
-		resp = ping(message)
-	case strings.HasPrefix(strings.ToLower(message.Text), "!погода"):
-		resp = getCurrentWeather(b.WeatherAPI)
-	case strings.HasPrefix(strings.ToLower(message.Text), "!чат"):
-		resp = askChatGPT(b.OpenaiAPI, strings.TrimPrefix(message.Text, "!чат"))
-	case strings.HasPrefix(strings.ToLower(message.Text), "!продажи"):
-		resp = getYesterdaySales(b.SheetsAPI)
-	case strings.HasPrefix(strings.ToLower(message.Text), "!анекдот"):
-		resp = getAnecdote(b.AnekdotAPI)
-	case strings.HasPrefix(strings.ToLower(message.Text), "!новости"):
-		resp = getLatestNews(b.KommersantAPI)
-		pm = tgbotapi.ModeMarkdown
-		disable_web_page_preview = true
-	case strings.HasPrefix(strings.ToLower(message.Text), "!команды"):
-		resp = "!пинг - проверка связи\n!погода - текущая погода\n!чат - вопрос к ChatGPT\n!команды - список доступных команд\n!продажи - текущие продажи из google spreadsheet\n!анекдот - случайный анекдот\n!новости - последние 3 новости из Коммерсанта"
-	case message.Voice != nil:
-		resp = transcriptVoice(b.OpenaiAPI, b.TGBotAPI, message.Voice.FileID)
-	default:
+func (b *Bot) onMessage(msg tgbotapi.Message) {
+	var resp tgbotapi.MessageConfig
+	words := strings.Split(msg.Text, " ")
+	cmd := findCommand(b.Commands, words[0])
+	if cmd != nil {
+		resp = cmd.Handler(b, &msg)
+	} else if strings.EqualFold(words[0], "!команды") {
+		help_text := "Доступные команды:\n"
+		for _, c := range b.Commands {
+			help_text += c.Name + " - " + c.Description
+		}
+		resp = tgbotapi.NewMessage(msg.Chat.ID, help_text)
+	} else {
 		return
 	}
-
-	msg := tgbotapi.NewMessage(message.Chat.ID, resp)
-	msg.ParseMode = pm
-	msg.DisableWebPagePreview = disable_web_page_preview
-	msg.ReplyToMessageID = message.MessageID
-	if _, err := b.TGBotAPI.Send(msg); err != nil {
+	resp.ReplyToMessageID = msg.MessageID
+	if _, err := b.TGBotAPI.Send(resp); err != nil {
 		log.Panic(err)
 	}
 }
@@ -95,6 +80,7 @@ func (b *Bot) mourningJob() {
 	for {
 		text := "Доброе утро! 🌅\n"
 		waitUntilMourning()
+
 		// call currency api
 		xr_today, err1 := b.ExchangeAPI.GetExchangeRates()
 		xr_yesterday, err2 := b.ExchangeAPI.GetHistoryExchangeRates(time.Now().UTC().Add(-48 * time.Hour))
@@ -120,6 +106,7 @@ func (b *Bot) mourningJob() {
 				(BTCUSD_today/BTCUSD_yesterday-1)*100,
 			)
 		}
+
 		// call weather api
 		weather := b.WeatherAPI.GetWeather()
 		sort.Slice(weather, func(i, j int) bool {
@@ -131,8 +118,19 @@ func (b *Bot) mourningJob() {
 				text += fmt.Sprintf("    %s: %+g°C (max: %+g°C, min: %+g°C), %s \n", w.Location.Name, w.Current.Temp, w.Forecast.Forecastday[0].Day.Maxtemp_c, w.Forecast.Forecastday[0].Day.Mintemp_c, w.Current.Condition.Text)
 			}
 		}
-		//call news api
-		text += getLatestNews(b.KommersantAPI)
+
+		// call news api
+		news, err := b.KommersantAPI.CallKommersantAPI()
+		if (err != nil) || (len(news) == 0) {
+			log.Printf("[ERROR] error calling news api: %v", err)
+		} else {
+			fmt_news := "\nПоследние новости:\n"
+			for i, n := range news[:3] {
+				fmt_news += fmt.Sprintf("%d. [%s](%s)\n", i+1, n.Title, n.Link)
+			}
+			text += fmt_news
+		}
+
 		// send message to group
 		msg := tgbotapi.NewMessage(b.GroupID, text)
 		msg.ParseMode = tgbotapi.ModeMarkdown
