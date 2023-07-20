@@ -50,7 +50,7 @@ func main() {
 
 	log.Printf("[INFO] Authorized on account %s", bot_api.Self.UserName)
 
-	httpClient := &http.Client{Timeout: 5 * time.Second}
+	httpClient := &http.Client{Timeout: 15 * time.Second}
 	openaiHttpClient := &http.Client{Timeout: 60 * time.Second}
 
 	anekdotAPI := &apiclient.AnecdoteAPI{HttpClient: httpClient}
