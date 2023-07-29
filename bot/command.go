@@ -7,15 +7,17 @@ import (
 )
 
 type Command struct {
-	Name        string
+	Names       []string
 	Description string
 	Handler     func(*Bot, *tgbotapi.Message) tgbotapi.MessageConfig
 }
 
 func findCommand(commands []Command, name string) *Command {
-	for i := range commands {
-		if strings.EqualFold(commands[i].Name, name) {
-			return &commands[i]
+	for i, cmd := range commands {
+		for _, n := range cmd.Names {
+			if strings.EqualFold(n, name) {
+				return &commands[i]
+			}
 		}
 	}
 	return nil
@@ -23,32 +25,32 @@ func findCommand(commands []Command, name string) *Command {
 
 var Commands = []Command{
 	{
-		Name:        "!пинг",
+		Names:       []string{"!пинг", "!ping"},
 		Description: "Провекра связи.",
 		Handler:     ping,
 	},
 	{
-		Name:        "!погода",
+		Names:       []string{"!погода", "!weather"},
 		Description: "Прогноз погоды в заданных городах.",
 		Handler:     getCurrentWeather,
 	},
 	{
-		Name:        "!чат",
+		Names:       []string{"!чат", "!gpt"},
 		Description: "Спросить ChatGPT.",
 		Handler:     askChatGPT,
 	},
 	{
-		Name:        "!продажи",
+		Names:       []string{"!продажи", "!sales"},
 		Description: "Текущие продажи.",
 		Handler:     getYesterdaySales,
 	},
 	{
-		Name:        "!анекдот",
+		Names:       []string{"!анекдот", "!joke"},
 		Description: "Свежий анекдот (может быть даже смешной).",
 		Handler:     getAnecdote,
 	},
 	{
-		Name:        "!новости",
+		Names:       []string{"!новости", "!news"},
 		Description: "Последние новости с сайта Коммерсант.",
 		Handler:     getLatestNews,
 	},

@@ -57,7 +57,7 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 	} else if strings.EqualFold(words[0], "!команды") {
 		help_text := "Доступные команды:\n"
 		for _, c := range b.Commands {
-			help_text += c.Name + " - " + c.Description + "\n"
+			help_text += strings.Join(c.Names, ", ") + " - " + c.Description + "\n"
 		}
 		resp = tgbotapi.NewMessage(msg.Chat.ID, help_text)
 	} else if msg.Voice != nil {
