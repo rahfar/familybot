@@ -25,7 +25,7 @@ jobs:
         secrets: |
           7f42da1c-25ae-497a-89de-b041013fa10a > TELEGRAM_TOKEN
           0a25642b-b877-4415-962b-b041013fb276 > TELEGRAM_GROUP
-          bc6f96c0-c7a9-4273-bac0-b041013fc1fa > TELEGRAM_CHATS
+          bc6f96c0-c7a9-4273-bac0-b041013fc1fa > TELEGRAM_ALLOWEDUSERNAMES
           627efa5d-6fdb-48bd-8956-b041013fcdab > WEATHERAPI_KEY
           b57dcf52-8a51-4a73-ab80-b041013fd903 > WEATHERAPI_CITIES
           3cdeba53-2ee5-49c6-9956-b041013fe498 > CURRENCYAPI_KEY

@@ -17,7 +17,7 @@ var opts struct {
 	Telegram struct {
 		Token   string `long:"token" env:"TOKEN" description:"telegram bot token" default:"test"`
 		GroupID int64  `long:"group" env:"GROUP" description:"group id"`
-		Chats   string `long:"chats" env:"CHATS" description:"acceptable usernames" default:""`
+		AllowedUsernames   string `long:"allowedusernames" env:"ALLOWEDUSERNAMES" description:"list of usernames that will have access to the bot" default:""`
 	} `group:"telegram" namespace:"telegram" env-namespace:"TELEGRAM"`
 	WeatherAPI struct {
 		Key    string `long:"key" env:"KEY"`
@@ -61,18 +61,18 @@ func main() {
 	weatherAPI := &apiclient.WeatherAPI{ApiKey: opts.WeatherAPI.Key, Cities: opts.WeatherAPI.Cities, HttpClient: httpClient}
 
 	b := bot.Bot{
-		Token:         opts.Telegram.Token,
-		Dbg:           opts.Dbg,
-		Chats:         strings.Split(opts.Telegram.Chats, ","),
-		GroupID:       opts.Telegram.GroupID,
-		Commands:      bot.Commands,
-		AnekdotAPI:    anekdotAPI,
-		ExchangeAPI:   exchangeAPI,
-		SheetsAPI:     sheetsAPI,
-		KommersantAPI: kommerstantAPI,
-		OpenaiAPI:     openaiAPI,
-		WeatherAPI:    weatherAPI,
-		TGBotAPI:      bot_api,
+		Token:            opts.Telegram.Token,
+		Dbg:              opts.Dbg,
+		AllowedUsernames: strings.Split(opts.Telegram.AllowedUsernames, ","),
+		GroupID:          opts.Telegram.GroupID,
+		Commands:         bot.Commands,
+		AnekdotAPI:       anekdotAPI,
+		ExchangeAPI:      exchangeAPI,
+		SheetsAPI:        sheetsAPI,
+		KommersantAPI:    kommerstantAPI,
+		OpenaiAPI:        openaiAPI,
+		WeatherAPI:       weatherAPI,
+		TGBotAPI:         bot_api,
 	}
 	b.Run()
 }

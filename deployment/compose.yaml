@@ -7,7 +7,7 @@ services:
     environment:
       - TZ=Europe/Helsinki
       - TELEGRAM_GROUP
-      - TELEGRAM_CHATS
+      - TELEGRAM_ALLOWEDUSERNAMES
       - TELEGRAM_TOKEN
       - WEATHERAPI_KEY
       - WEATHERAPI_CITIES

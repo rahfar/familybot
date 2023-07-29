@@ -13,26 +13,21 @@ import (
 )
 
 type Bot struct {
-	Token         string
-	Dbg           bool
-	Chats         []string
-	GroupID       int64
-	Commands      []Command
-	TGBotAPI      *tgbotapi.BotAPI
-	AnekdotAPI    *apiclient.AnecdoteAPI
-	ExchangeAPI   *apiclient.ExchangeAPI
-	SheetsAPI     *apiclient.SheetsAPI
-	KommersantAPI *apiclient.KommersantAPI
-	OpenaiAPI     *apiclient.OpenaiAPI
-	WeatherAPI    *apiclient.WeatherAPI
+	Token            string
+	Dbg              bool
+	AllowedUsernames []string
+	GroupID          int64
+	Commands         []Command
+	TGBotAPI         *tgbotapi.BotAPI
+	AnekdotAPI       *apiclient.AnecdoteAPI
+	ExchangeAPI      *apiclient.ExchangeAPI
+	SheetsAPI        *apiclient.SheetsAPI
+	KommersantAPI    *apiclient.KommersantAPI
+	OpenaiAPI        *apiclient.OpenaiAPI
+	WeatherAPI       *apiclient.WeatherAPI
 }
 
 func (b *Bot) Run() {
-	usernames := make(map[string]struct{}, 0)
-	for _, username := range b.Chats {
-		usernames[username] = struct{}{}
-	}
-
 	go b.mourningJob()
 
 	update_cfg := tgbotapi.NewUpdate(0)
@@ -44,9 +39,8 @@ func (b *Bot) Run() {
 		if update.Message == nil || update.Message.Chat == nil {
 			continue
 		}
-		_, ok := usernames[update.Message.Chat.UserName]
-		ok = ok || update.Message.Chat.ID == b.GroupID
-		if !ok {
+
+		if !b.isMessageFromAllowedChat(update) {
 			log.Printf("[INFO] Skip message from unsupported chat. Chat: %+v\n", *update.Message.Chat)
 			continue
 		}
@@ -151,4 +145,16 @@ func waitUntilMourning() {
 	}
 	log.Println("[INFO] Waiting until mourning ", desiredTime.Sub(t))
 	time.Sleep(desiredTime.Sub(t))
+}
+
+func (b *Bot) isMessageFromAllowedChat(update tgbotapi.Update) bool {
+	if update.Message.Chat.ID == b.GroupID {
+		return true
+	}
+	for _, un := range b.AllowedUsernames {
+		if un == update.Message.Chat.UserName {
+			return true
+		}
+	}
+	return false
 }
