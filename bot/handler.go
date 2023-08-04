@@ -35,15 +35,16 @@ func getCurrentWeather(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 }
 
 func askChatGPT(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
-	// TODO remove hardcoded command name
-	question := strings.TrimPrefix(msg.Text, "!чат")
-	question = strings.TrimSpace(question)
+	question := removeFirstWord(msg.Text)
 	ans, err := bot.OpenaiAPI.CallGPT3dot5(question)
 	if err != nil || len(ans) == 0 {
 		log.Printf("[ERROR] Error occured while call openai: %v", err)
 		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
 	}
-	return tgbotapi.NewMessage(msg.Chat.ID, ans)
+	resp := tgbotapi.NewMessage(msg.Chat.ID, ans)
+	resp.ParseMode = tgbotapi.ModeMarkdownV2
+	resp.DisableWebPagePreview = true
+	return resp
 }
 
 func getYesterdaySales(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
@@ -118,4 +119,20 @@ func transcriptVoice(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при обработки голосового сообщения")
 	}
 	return tgbotapi.NewMessage(msg.Chat.ID, text)
+}
+
+func removeFirstWord(input string) string {
+	// Find the index of the first space
+	firstSpaceIndex := strings.Index(input, " ")
+
+	// If no space is found, return the original string
+	if firstSpaceIndex == -1 {
+		return input
+	}
+
+	// Extract the substring after the first space
+	// (adding 1 to exclude the space itself)
+	result := input[firstSpaceIndex+1:]
+
+	return result
 }
