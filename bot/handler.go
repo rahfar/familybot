@@ -42,7 +42,7 @@ func askChatGPT(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
 	}
 	resp := tgbotapi.NewMessage(msg.Chat.ID, ans)
-	resp.ParseMode = tgbotapi.ModeMarkdownV2
+	resp.ParseMode = tgbotapi.ModeMarkdown
 	resp.DisableWebPagePreview = true
 	return resp
 }
