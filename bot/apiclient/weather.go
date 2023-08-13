@@ -42,7 +42,7 @@ func (w *WeatherAPI) GetWeather() []Weather {
 	weather := make([]Weather, 0)
 	cities := strings.Split(w.Cities, ",")
 	for _, city := range cities {
-		w, err := w.callCurrentApi(city)
+		w, err := w.callCurrentAPI(city)
 		if err != nil {
 			slog.Warn("could not get weather", "city", city, "err", err)
 		} else {
@@ -52,38 +52,38 @@ func (w *WeatherAPI) GetWeather() []Weather {
 	return weather
 }
 
-func (w *WeatherAPI) callCurrentApi(city string) (*Weather, error) {
-	const max_retry int = 3
-	base_url := "https://api.weatherapi.com/v1/forecast.json"
-	query_str := fmt.Sprintf("?key=%s&q=%s&lang=ru&days=1&aqi=no&alerts=no", w.ApiKey, url.QueryEscape(city))
-	body := []byte{}
+func (w *WeatherAPI) callCurrentAPI(city string) (*Weather, error) {
+	const maxRetry = 3
+	baseURL := "https://api.weatherapi.com/v1/forecast.json"
+	queryStr := fmt.Sprintf("?key=%s&q=%s&lang=ru&days=1&aqi=no&alerts=no", w.ApiKey, url.QueryEscape(city))
 
-	for i := 1; i <= max_retry; i += 1 {
-		resp, err := w.HttpClient.Get(base_url + query_str)
+	for i := 1; i <= maxRetry; i++ {
+		resp, err := w.HttpClient.Get(baseURL + queryStr)
 		if err != nil {
 			return nil, err
 		}
 		defer resp.Body.Close()
 
-		body, err = io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, err
 		}
 
 		if resp.StatusCode/100 == 2 {
-			break
-		} else if i < max_retry {
-			slog.Info("got error response from api, retrying in 3 seconds...", "retry-cnt", i, "status", resp.Status, "body", string(body))
+			var weather Weather
+			if err := json.Unmarshal(body, &weather); err != nil {
+				return nil, err
+			}
+			return &weather, nil
+		}
+
+		if i < maxRetry {
+			slog.Info("got error response from api, retrying in 5 seconds...", "retry-cnt", i, "status", resp.Status, "body", string(body))
 			time.Sleep(5 * time.Second)
 		} else {
 			return nil, fmt.Errorf("got error response from api: %s - %s", resp.Status, string(body))
 		}
 	}
 
-	var weather Weather
-	err := json.Unmarshal(body, &weather)
-	if err != nil {
-		return nil, err
-	}
-	return &weather, nil
+	return nil, fmt.Errorf("max retries reached")
 }

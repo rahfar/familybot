@@ -57,7 +57,7 @@ func getYesterdaySales(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 }
 
 func getAnecdote(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
-	anecdote, err := bot.AnekdotAPI.CallAnecdoteApi()
+	anecdote, err := bot.AnekdotAPI.CallAnecdoteAPI()
 	if err != nil || len(anecdote) == 0 {
 		slog.Error("error calling anecdote api", "err", err)
 		return tgbotapi.NewMessage(msg.Chat.ID, "Не смог получить свежий анекдот :(")

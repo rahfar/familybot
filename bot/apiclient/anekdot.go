@@ -18,13 +18,12 @@ type Anecdote struct {
 	Content  string `json:"content"`
 }
 
-func (a *AnecdoteAPI) CallAnecdoteApi() (string, error) {
-	const max_retry int = 3
-	base_url := "https://jokesrv.rubedo.cloud/"
-	body := []byte{}
+func (a *AnecdoteAPI) CallAnecdoteAPI() (string, error) {
+	const maxRetry = 3
+	baseURL := "https://jokesrv.rubedo.cloud/"
 
-	for i := 1; i <= max_retry; i += 1 {
-		resp, err := a.HttpClient.Get(base_url)
+	for i := 1; i <= maxRetry; i++ {
+		resp, err := a.HttpClient.Get(baseURL)
 		if err != nil {
 			return "", err
 		}
@@ -36,8 +35,14 @@ func (a *AnecdoteAPI) CallAnecdoteApi() (string, error) {
 		}
 
 		if resp.StatusCode/100 == 2 {
-			break
-		} else if i < max_retry {
+			var an Anecdote
+			if err := json.Unmarshal(body, &an); err != nil {
+				return "", err
+			}
+			return an.Content, nil
+		}
+
+		if i < maxRetry {
 			slog.Info("got error response from api, retrying in 3 seconds...", "retry-cnt", i, "status", resp.Status, "body", string(body))
 			time.Sleep(3 * time.Second)
 		} else {
@@ -45,10 +50,5 @@ func (a *AnecdoteAPI) CallAnecdoteApi() (string, error) {
 		}
 	}
 
-	var an Anecdote
-	err := json.Unmarshal(body, &an)
-	if err != nil {
-		return "", err
-	}
-	return an.Content, nil
+	return "", fmt.Errorf("max retries reached")
 }

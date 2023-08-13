@@ -48,32 +48,33 @@ type Item struct {
 }
 
 func (k *KommersantAPI) CallKommersantAPI() ([]Item, error) {
-	const max_retry int = 3
-	base_url := "https://www.kommersant.ru/RSS/news.xml"
-	resp := &http.Response{}
+	const maxRetry = 3
+	baseURL := "https://www.kommersant.ru/RSS/news.xml"
 
-	for i := 1; i <= max_retry; i += 1 {
-		resp, err := k.HttpClient.Get(base_url)
+	for i := 1; i <= maxRetry; i++ {
+		resp, err := k.HttpClient.Get(baseURL)
 		if err != nil {
 			return nil, err
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode/100 == 2 {
-			break
-		} else if i < max_retry {
+			var rss Rss
+			decoder := xml.NewDecoder(resp.Body)
+			decoder.CharsetReader = charset.NewReaderLabel
+			if err := decoder.Decode(&rss); err != nil {
+				return nil, err
+			}
+			return rss.Channel.Item, nil
+		}
+
+		if i < maxRetry {
 			slog.Info("got error response from api, retrying in 3 seconds...", "retry-cnt", i, "status", resp.Status)
 			time.Sleep(3 * time.Second)
 		} else {
 			return nil, fmt.Errorf("got error response from api: %s", resp.Status)
 		}
 	}
-	var rss Rss
-	decoder := xml.NewDecoder(resp.Body)
-	decoder.CharsetReader = charset.NewReaderLabel
-	err := decoder.Decode(&rss)
-	if err != nil {
-		return nil, err
-	}
-	return rss.Channel.Item, nil
+
+	return nil, fmt.Errorf("max retries reached")
 }
