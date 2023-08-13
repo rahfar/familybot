@@ -145,7 +145,7 @@ func waitUntilMourning() {
 	if desiredTime.Sub(t) <= 5*time.Second {
 		desiredTime = desiredTime.Add(24 * time.Hour)
 	}
-	slog.Info("waiting until mourning", "time-to-wait", desiredTime.Sub(t))
+	slog.Info("waiting until mourning", "time-to-wait", desiredTime.Sub(t).String())
 	time.Sleep(desiredTime.Sub(t))
 }
 

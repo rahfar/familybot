@@ -62,7 +62,7 @@ func (k *KommersantAPI) CallKommersantAPI() ([]Item, error) {
 		if resp.StatusCode/100 == 2 {
 			break
 		} else if i < max_retry {
-			slog.Info("got error response from api, retrying...", "retry-cnt", i, "status", resp.Status)
+			slog.Info("got error response from api, retrying in 3 seconds...", "retry-cnt", i, "status", resp.Status)
 			time.Sleep(3 * time.Second)
 		} else {
 			return nil, fmt.Errorf("got error response from api: %s", resp.Status)

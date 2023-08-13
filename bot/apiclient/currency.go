@@ -50,7 +50,7 @@ func (e *ExchangeAPI) GetExchangeRates() (*ExchangeRates, error) {
 		if resp.StatusCode/100 == 2 {
 			break
 		} else if i < max_retry {
-			slog.Info("got error response from api, retrying...", "retry-cnt", i, "status", resp.Status, "body", string(body))
+			slog.Info("got error response from api, retrying in 3 seconds...", "retry-cnt", i, "status", resp.Status, "body", string(body))
 			time.Sleep(3 * time.Second)
 		} else {
 			return nil, fmt.Errorf("got error response from api: %s - %s", resp.Status, string(body))
@@ -87,7 +87,7 @@ func (e *ExchangeAPI) GetHistoryExchangeRates(datetime time.Time) (*ExchangeRate
 		if resp.StatusCode/100 == 2 {
 			break
 		} else if i < max_retry {
-			slog.Info("got error response from api, retrying...", "retry-cnt", i, "status", resp.Status, "body", string(body))
+			slog.Info("got error response from api, retrying in 3 seconds...", "retry-cnt", i, "status", resp.Status, "body", string(body))
 			time.Sleep(3 * time.Second)
 		} else {
 			return nil, fmt.Errorf("got error response from api: %s - %s", resp.Status, string(body))
