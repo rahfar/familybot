@@ -1,8 +1,9 @@
 package main
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -15,9 +16,9 @@ import (
 
 var opts struct {
 	Telegram struct {
-		Token   string `long:"token" env:"TOKEN" description:"telegram bot token" default:"test"`
-		GroupID int64  `long:"group" env:"GROUP" description:"group id"`
-		AllowedUsernames   string `long:"allowedusernames" env:"ALLOWEDUSERNAMES" description:"list of usernames that will have access to the bot" default:""`
+		Token            string `long:"token" env:"TOKEN" description:"telegram bot token" default:"test"`
+		GroupID          int64  `long:"group" env:"GROUP" description:"group id"`
+		AllowedUsernames string `long:"allowedusernames" env:"ALLOWEDUSERNAMES" description:"list of usernames that will have access to the bot" default:""`
 	} `group:"telegram" namespace:"telegram" env-namespace:"TELEGRAM"`
 	WeatherAPI struct {
 		Key    string `long:"key" env:"KEY"`
@@ -37,18 +38,22 @@ var opts struct {
 }
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true})))
+
 	if _, err := flags.Parse(&opts); err != nil {
-		log.Fatal("[ERROR] Error parsing options")
+		slog.Error("Error parsing options")
+		panic(err)
 	}
 
 	bot_api, err := tgbotapi.NewBotAPI(opts.Telegram.Token)
 	if err != nil {
-		log.Panic(err)
+		slog.Error("could not initialize bot", "err", err)
+		panic(err)
 	}
 
 	bot_api.Debug = opts.Dbg
 
-	log.Printf("[INFO] Authorized on account %s", bot_api.Self.UserName)
+	slog.Info("bot is authorized", "bot-username", bot_api.Self.UserName)
 
 	httpClient := &http.Client{Timeout: 15 * time.Second}
 	openaiHttpClient := &http.Client{Timeout: 60 * time.Second}

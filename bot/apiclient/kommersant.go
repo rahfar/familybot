@@ -3,8 +3,11 @@ package apiclient
 import (
 	"encoding/xml"
 	"fmt"
-	"golang.org/x/net/html/charset"
+	"log/slog"
 	"net/http"
+	"time"
+
+	"golang.org/x/net/html/charset"
 )
 
 type KommersantAPI struct {
@@ -45,19 +48,30 @@ type Item struct {
 }
 
 func (k *KommersantAPI) CallKommersantAPI() ([]Item, error) {
+	const max_retry int = 3
 	base_url := "https://www.kommersant.ru/RSS/news.xml"
-	resp, err := k.HttpClient.Get(base_url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("non 2** HTTP status code: %d - %s", resp.StatusCode, resp.Status)
+	resp := &http.Response{}
+
+	for i := 1; i <= max_retry; i += 1 {
+		resp, err := k.HttpClient.Get(base_url)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode/100 == 2 {
+			break
+		} else if i < max_retry {
+			slog.Info("got error response from api, retrying...", "retry-cnt", i, "status", resp.Status)
+			time.Sleep(3 * time.Second)
+		} else {
+			return nil, fmt.Errorf("got error response from api: %s", resp.Status)
+		}
 	}
 	var rss Rss
 	decoder := xml.NewDecoder(resp.Body)
 	decoder.CharsetReader = charset.NewReaderLabel
-	err = decoder.Decode(&rss)
+	err := decoder.Decode(&rss)
 	if err != nil {
 		return nil, err
 	}

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -32,48 +32,71 @@ type ExchangeRates struct {
 }
 
 func (e *ExchangeAPI) GetExchangeRates() (*ExchangeRates, error) {
+	const max_retry int = 3
 	base_url := "https://api.currencyapi.com/v3/latest"
 	query_str := fmt.Sprintf("?apikey=%s", e.ApiKey)
-	resp, err := e.HttpClient.Get(base_url + query_str)
-	if err != nil {
-		return nil, err
+	body := []byte{}
+
+	for i := 1; i <= max_retry; i += 1 {
+		resp, err := e.HttpClient.Get(base_url + query_str)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode/100 == 2 {
+			break
+		} else if i < max_retry {
+			slog.Info("got error response from api, retrying...", "retry-cnt", i, "status", resp.Status, "body", string(body))
+			time.Sleep(3 * time.Second)
+		} else {
+			return nil, fmt.Errorf("got error response from api: %s - %s", resp.Status, string(body))
+		}
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("non 2** HTTP status code: %d - %s - %s", resp.StatusCode, resp.Status, string(body))
-	}
+
 	var xr ExchangeRates
-	err = json.Unmarshal(body, &xr)
+	err := json.Unmarshal(body, &xr)
 	if err != nil {
-		log.Printf("[ERROR] Could not unmarshal json body: %v", err)
+		slog.Error("could not unmarshal json body", "err", err)
 		return nil, err
 	}
 	return &xr, nil
 }
 
 func (e *ExchangeAPI) GetHistoryExchangeRates(datetime time.Time) (*ExchangeRates, error) {
+	const max_retry int = 3
 	base_url := "https://api.currencyapi.com/v3/historical"
 	query_str := fmt.Sprintf("?apikey=%s&date=%s", e.ApiKey, datetime.Format("2006-01-02"))
-	resp, err := e.HttpClient.Get(base_url + query_str)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("non 2** HTTP status code: %d - %s - %s", resp.StatusCode, resp.Status, string(body))
+	body := []byte{}
+
+	for i := 1; i <= max_retry; i += 1 {
+		resp, err := e.HttpClient.Get(base_url + query_str)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode/100 == 2 {
+			break
+		} else if i < max_retry {
+			slog.Info("got error response from api, retrying...", "retry-cnt", i, "status", resp.Status, "body", string(body))
+			time.Sleep(3 * time.Second)
+		} else {
+			return nil, fmt.Errorf("got error response from api: %s - %s", resp.Status, string(body))
+		}
 	}
 	var xr ExchangeRates
-	err = json.Unmarshal(body, &xr)
+	err := json.Unmarshal(body, &xr)
 	if err != nil {
-		log.Printf("[ERROR] Could not unmarshal json body: %v", err)
+		slog.Error("could not unmarshal json body", "err", err)
 		return nil, err
 	}
 	return &xr, nil

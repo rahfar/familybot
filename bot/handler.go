@@ -3,7 +3,7 @@ package bot
 import (
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -38,7 +38,7 @@ func askChatGPT(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 	question := removeFirstWord(msg.Text)
 	ans, err := bot.OpenaiAPI.CallGPT3dot5(question)
 	if err != nil || len(ans) == 0 {
-		log.Printf("[ERROR] Error occured while call openai: %v", err)
+		slog.Error("error occured while call openai", "err", err)
 		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
 	}
 	resp := tgbotapi.NewMessage(msg.Chat.ID, ans)
@@ -59,7 +59,7 @@ func getYesterdaySales(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 func getAnecdote(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 	anecdote, err := bot.AnekdotAPI.CallAnecdoteApi()
 	if err != nil || len(anecdote) == 0 {
-		log.Printf("[ERROR] error calling anecdote api: %v", err)
+		slog.Error("error calling anecdote api", "err", err)
 		return tgbotapi.NewMessage(msg.Chat.ID, "Не смог получить свежий анекдот :(")
 	}
 	return tgbotapi.NewMessage(msg.Chat.ID, anecdote)
@@ -68,7 +68,7 @@ func getAnecdote(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 func getLatestNews(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 	news, err := bot.KommersantAPI.CallKommersantAPI()
 	if (err != nil) || (len(news) == 0) {
-		log.Printf("[ERROR] error calling news api: %v", err)
+		slog.Error("error calling news api", "err", err)
 		return tgbotapi.NewMessage(msg.Chat.ID, "Не смог получить последние новости :(")
 	}
 	fmt_news := "\nПоследние новости:\n"
@@ -85,16 +85,16 @@ func transcriptVoice(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 	// Get direct link to audio message
 	link, err := bot.TGBotAPI.GetFileDirectURL(msg.Voice.FileID)
 	if err != nil {
-		log.Printf("[ERROR] getting voice msg: %v", err)
+		slog.Error("getting voice msg", "err", err)
 		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при скачивании голосового сообщения")
 
 	}
 	filename := "/tmp/" + msg.Voice.FileID + path.Ext(link)
-	log.Printf("[DEBUG] audio filename: %s", filename)
+	slog.Debug("saving audio", "filename", filename)
 	// Download audio file
 	resp, err := http.Get(link)
 	if err != nil {
-		log.Printf("[ERROR] getting voice msg: %v", err)
+		slog.Error("getting voice msg", "err", err)
 		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при скачивании голосового сообщения")
 	}
 	defer resp.Body.Close()
@@ -115,7 +115,7 @@ func transcriptVoice(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 
 	text, err := bot.OpenaiAPI.CallWhisper(filename)
 	if err != nil {
-		log.Printf("[ERROR] getting voice msg: %v", err)
+		slog.Error("getting voice msg", "err", err)
 		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при обработки голосового сообщения")
 	}
 	return tgbotapi.NewMessage(msg.Chat.ID, text)

@@ -12,7 +12,7 @@ type OpenaiAPI struct {
 	HttpClient *http.Client
 }
 
-const maxPromptSymbolSize = 1000
+const maxPromptSymbolSize = 2000
 
 func (o *OpenaiAPI) CallGPT3dot5(question string) (string, error) {
 	if len(question) > maxPromptSymbolSize {

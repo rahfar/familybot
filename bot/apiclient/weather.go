@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type WeatherAPI struct {
@@ -43,7 +44,7 @@ func (w *WeatherAPI) GetWeather() []Weather {
 	for _, city := range cities {
 		w, err := w.callCurrentApi(city)
 		if err != nil {
-			log.Printf("[WARN] Could not get weather for %s: %v\n", city, err)
+			slog.Warn("could not get weather", "city", city, "err", err)
 		} else {
 			weather = append(weather, *w)
 		}
@@ -52,22 +53,35 @@ func (w *WeatherAPI) GetWeather() []Weather {
 }
 
 func (w *WeatherAPI) callCurrentApi(city string) (*Weather, error) {
+	const max_retry int = 3
 	base_url := "https://api.weatherapi.com/v1/forecast.json"
 	query_str := fmt.Sprintf("?key=%s&q=%s&lang=ru&days=1&aqi=no&alerts=no", w.ApiKey, url.QueryEscape(city))
-	resp, err := w.HttpClient.Get(base_url + query_str)
-	if err != nil {
-		return nil, err
+	body := []byte{}
+
+	for i := 1; i <= max_retry; i += 1 {
+		resp, err := w.HttpClient.Get(base_url + query_str)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		body, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode/100 == 2 {
+			break
+		} else if i < max_retry {
+			slog.Info("got error response from api, retrying...", "retry-cnt", i, "status", resp.Status, "body", string(body))
+			time.Sleep(5 * time.Second)
+		} else {
+			return nil, fmt.Errorf("got error response from api: %s - %s", resp.Status, string(body))
+		}
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode/100 != 2 {
-		return nil, fmt.Errorf("non 2** HTTP status code: %d - %s - %s", resp.StatusCode, resp.Status, string(body))
-	}
+
 	var weather Weather
-	err = json.Unmarshal(body, &weather)
+	err := json.Unmarshal(body, &weather)
 	if err != nil {
 		return nil, err
 	}

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"log"
+	"log/slog"
 	"strconv"
 
 	"golang.org/x/oauth2/google"
@@ -45,12 +45,12 @@ func (s *SheetsAPI) CallGoogleSheetsApi(day, month int) ([]ShopSales, float64, e
 	var month_total float64
 	keyBytes, err := base64.StdEncoding.DecodeString(s.ApiKey)
 	if err != nil {
-		log.Println("[ERROR] Could not base64 decode apikey")
+		slog.Error("could not base64 decode apikey")
 		return nil, 0, err
 	}
 	config, err := google.JWTConfigFromJSON(keyBytes, sheets.SpreadsheetsReadonlyScope)
 	if err != nil {
-		log.Printf("[ERROR] Unable to create JWT config: %v\n", err)
+		slog.Error("unable to create JWT config", "err", err)
 		return nil, 0, err
 	}
 
@@ -59,7 +59,7 @@ func (s *SheetsAPI) CallGoogleSheetsApi(day, month int) ([]ShopSales, float64, e
 	client := config.Client(ctx)
 	sheetsService, err := sheets.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
-		log.Printf("[ERROR] Unable to create Sheets API client: %v\n", err)
+		slog.Error("unable to create Sheets API client", "err", err)
 		return nil, 0, err
 	}
 
@@ -77,7 +77,7 @@ func (s *SheetsAPI) CallGoogleSheetsApi(day, month int) ([]ShopSales, float64, e
 		// Make the API request to retrieve the values in the specified cells.
 		resp, err := sheetsService.Spreadsheets.Values.Get(s.SpreadsheetId, cellRange).ValueRenderOption("UNFORMATTED_VALUE").Do()
 		if err != nil {
-			log.Printf("[ERROR] Unable to retrieve values: %v\n", err)
+			slog.Error("unable to retrieve values", "err", err)
 			continue
 		}
 
@@ -89,13 +89,13 @@ func (s *SheetsAPI) CallGoogleSheetsApi(day, month int) ([]ShopSales, float64, e
 		salestype := fmt.Sprint(resp.Values[0][1])
 		salesvalue, err := strconv.ParseFloat(fmt.Sprint(resp.Values[0][len(resp.Values[0])-1]), 64)
 		if err != nil {
-			log.Printf("[ERROR] Could not parse salesvalue: %v\n", err)
+			slog.Error("could not parse salesvalue", "err", err)
 			continue
 		}
 		for i := 2; i < len(resp.Values[0]); i++ {
 			salesvalue, err := strconv.ParseFloat(fmt.Sprint(resp.Values[0][i]), 64)
 			if err != nil {
-				log.Printf("[ERROR] Could not parse salesvalue: %v\n", err)
+				slog.Error("could not parse salesvalue", "err", err)
 				month_total = 0
 				break
 			}

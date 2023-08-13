@@ -2,7 +2,7 @@ package bot
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"sort"
 	"strings"
 	"time"
@@ -41,7 +41,7 @@ func (b *Bot) Run() {
 		}
 
 		if !b.isMessageFromAllowedChat(update) {
-			log.Printf("[INFO] Skip message from unsupported chat. Chat: %+v\n", *update.Message.Chat)
+			slog.Info("skip message from unsupported chat", "chat", *update.Message.Chat)
 			continue
 		}
 		go b.onMessage(*update.Message)
@@ -67,12 +67,13 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 	}
 	resp.ReplyToMessageID = msg.MessageID
 	if _, err := b.TGBotAPI.Send(resp); err != nil {
-		log.Panic(err)
+		slog.Error("error sending msg", "err", err)
+		panic(err)
 	}
 }
 
 func (b *Bot) mourningJob() {
-	log.Println("[INFO] Starting mourning job")
+	slog.Info("starting mourning job")
 	for {
 		text := "Доброе утро! 🌅\n"
 		waitUntilMourning()
@@ -82,9 +83,9 @@ func (b *Bot) mourningJob() {
 		xr_yesterday, err2 := b.ExchangeAPI.GetHistoryExchangeRates(time.Now().UTC().Add(-48 * time.Hour))
 		switch {
 		case err1 != nil:
-			log.Printf("[ERROR] Could not get currency exchange rates: %v", err1)
+			slog.Error("could not get currency exchange rates", "err", err1)
 		case err2 != nil:
-			log.Printf("[ERROR] Could not get currency history exchange rates: %v", err2)
+			slog.Error("could not get currency history exchange rates", "err", err2)
 		default:
 			USDRUB_today := xr_today.Data.RUB.Value
 			EURRUB_today := xr_today.Data.RUB.Value / xr_today.Data.EUR.Value
@@ -118,7 +119,7 @@ func (b *Bot) mourningJob() {
 		// call news api
 		news, err := b.KommersantAPI.CallKommersantAPI()
 		if (err != nil) || (len(news) == 0) {
-			log.Printf("[ERROR] error calling news api: %v", err)
+			slog.Error("error calling news api", "err", err)
 		} else {
 			fmt_news := "\nПоследние новости:\n"
 			for i, n := range news[:3] {
@@ -132,7 +133,8 @@ func (b *Bot) mourningJob() {
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		msg.DisableWebPagePreview = true
 		if _, err := b.TGBotAPI.Send(msg); err != nil {
-			log.Panic(err)
+			slog.Error("error sending msg", "err", err)
+			panic(err)
 		}
 	}
 }
@@ -143,7 +145,7 @@ func waitUntilMourning() {
 	if desiredTime.Sub(t) <= 5*time.Second {
 		desiredTime = desiredTime.Add(24 * time.Hour)
 	}
-	log.Println("[INFO] Waiting until mourning ", desiredTime.Sub(t))
+	slog.Info("waiting until mourning", "time-to-wait", desiredTime.Sub(t))
 	time.Sleep(desiredTime.Sub(t))
 }
 
