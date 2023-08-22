@@ -73,7 +73,13 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 			return
 		}
 		if i < maxRetry {
-			slog.Info("error sending response, retrying in 5 seconds (disable formatting)...", "err", err, "request", msg.Text, "response", resp.Text)
+			slog.Info(
+				"error sending response, retrying in 5 seconds (disable formatting)...",
+				"err", err,
+				"request", msg.Text,
+				"response", resp.Text,
+				"retry-cnt", i,
+			)
 			resp.ParseMode = ""
 			time.Sleep(5 * time.Second)
 		} else {
@@ -150,7 +156,12 @@ func (b *Bot) mourningJob() {
 				return
 			}
 			if i < maxRetry {
-				slog.Info("error sending message, retrying in 5 seconds (disable formatting)...", "err", err, "message", msg.Text)
+				slog.Info(
+					"error sending message, retrying in 5 seconds (disable formatting)...",
+					"err", err,
+					"message", msg.Text,
+					"retry-cnt", i,
+				)
 				msg.ParseMode = ""
 				time.Sleep(5 * time.Second)
 			} else {
