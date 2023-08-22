@@ -49,6 +49,7 @@ func (b *Bot) Run() {
 }
 
 func (b *Bot) onMessage(msg tgbotapi.Message) {
+	const maxRetry = 3
 	var resp tgbotapi.MessageConfig
 	words := strings.Split(msg.Text, " ")
 	cmd := findCommand(b.Commands, words[0])
@@ -66,13 +67,22 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 		return
 	}
 	resp.ReplyToMessageID = msg.MessageID
-	if _, err := b.TGBotAPI.Send(resp); err != nil {
-		slog.Error("error sending msg", "err", err)
-		panic(err)
+	for i := 1; i <= maxRetry; i++ {
+		_, err := b.TGBotAPI.Send(resp)
+		if err == nil {
+			return
+		}
+		if i < maxRetry {
+			slog.Info("error sending responce, retrying in 5 seconds...", "err", err, "message", msg.Text)
+			time.Sleep(5 * time.Second)
+		} else {
+			slog.Error("error sending responce", "err", err, "message", msg.Text)
+		}
 	}
 }
 
 func (b *Bot) mourningJob() {
+	const maxRetry = 3
 	slog.Info("starting mourning job")
 	for {
 		text := "Доброе утро! 🌅\n"
@@ -132,9 +142,18 @@ func (b *Bot) mourningJob() {
 		msg := tgbotapi.NewMessage(b.GroupID, text)
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		msg.DisableWebPagePreview = true
-		if _, err := b.TGBotAPI.Send(msg); err != nil {
-			slog.Error("error sending msg", "err", err)
-			panic(err)
+
+		for i := 1; i <= maxRetry; i++ {
+			_, err := b.TGBotAPI.Send(msg)
+			if err == nil {
+				return
+			}
+			if i < maxRetry {
+				slog.Info("error sending msg, retrying in 5 seconds...", "err", err, "message", msg.Text)
+				time.Sleep(5 * time.Second)
+			} else {
+				slog.Error("error sending msg", "err", err, "message", msg.Text)
+			}
 		}
 	}
 }
