@@ -173,15 +173,15 @@ func (b *Bot) sendMessage(msg tgbotapi.MessageConfig) {
 
 			if i < maxRetry {
 				slog.Info(
-					"error sending msg, retrying in 5 seconds (disable formatting)...",
+					"error sending message, retrying in 5 seconds (disable formatting)...",
 					"err", err,
-					"msg", msg.Text,
+					"message", msg.Text,
 					"retry-cnt", i,
 				)
 				msg.ParseMode = ""
 				time.Sleep(5 * time.Second)
 			} else {
-				slog.Error("error sending response", "err", err, "msg", msg.Text)
+				slog.Error("error sending message", "err", err, "message", msg.Text)
 				return
 			}
 		}
