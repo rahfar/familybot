@@ -49,7 +49,6 @@ func (b *Bot) Run() {
 }
 
 func (b *Bot) onMessage(msg tgbotapi.Message) {
-	const maxRetry = 3
 	var resp tgbotapi.MessageConfig
 	words := strings.Split(msg.Text, " ")
 	cmd := findCommand(b.Commands, words[0])
@@ -67,29 +66,10 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 		return
 	}
 	resp.ReplyToMessageID = msg.MessageID
-	for i := 1; i <= maxRetry; i++ {
-		_, err := b.TGBotAPI.Send(resp)
-		if err == nil {
-			return
-		}
-		if i < maxRetry {
-			slog.Info(
-				"error sending response, retrying in 5 seconds (disable formatting)...",
-				"err", err,
-				"request", msg.Text,
-				"response", resp.Text,
-				"retry-cnt", i,
-			)
-			resp.ParseMode = ""
-			time.Sleep(5 * time.Second)
-		} else {
-			slog.Error("error sending response", "err", err, "request", msg.Text, "response", resp.Text)
-		}
-	}
+	b.sendMessage(resp)
 }
 
 func (b *Bot) mourningJob() {
-	const maxRetry = 3
 	slog.Info("starting mourning job")
 	for {
 		text := "Доброе утро! 🌅\n"
@@ -150,22 +130,59 @@ func (b *Bot) mourningJob() {
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		msg.DisableWebPagePreview = true
 
+		b.sendMessage(msg)
+	}
+}
+
+func (b *Bot) isMessageFromAllowedChat(update tgbotapi.Update) bool {
+	if update.Message.Chat.ID == b.GroupID {
+		return true
+	}
+	for _, un := range b.AllowedUsernames {
+		if un == update.Message.Chat.UserName {
+			return true
+		}
+	}
+	return false
+}
+
+func (b *Bot) sendMessage(msg tgbotapi.MessageConfig) {
+	const (
+		maxRetry     = 3
+		maxMsgLength = 4096
+	)
+
+	msgText := msg.Text
+	msgLength := len(msgText)
+	msgParts := (msgLength + maxMsgLength - 1) / maxMsgLength // Ceiling division
+
+	for i := 0; i < msgParts; i++ {
+		start := i * maxMsgLength
+		end := (i + 1) * maxMsgLength
+		if end > msgLength {
+			end = msgLength
+		}
+
+		msg.Text = msgText[start:end]
+
 		for i := 1; i <= maxRetry; i++ {
 			_, err := b.TGBotAPI.Send(msg)
 			if err == nil {
-				return
+				break
 			}
+
 			if i < maxRetry {
 				slog.Info(
-					"error sending message, retrying in 5 seconds (disable formatting)...",
+					"error sending msg, retrying in 5 seconds (disable formatting)...",
 					"err", err,
-					"message", msg.Text,
+					"msg", msg.Text,
 					"retry-cnt", i,
 				)
 				msg.ParseMode = ""
 				time.Sleep(5 * time.Second)
 			} else {
-				slog.Error("error sending message", "err", err, "message", msg.Text)
+				slog.Error("error sending response", "err", err, "msg", msg.Text)
+				return
 			}
 		}
 	}
@@ -179,16 +196,4 @@ func waitUntilMourning() {
 	}
 	slog.Info("waiting until mourning", "time-to-wait", desiredTime.Sub(t).String())
 	time.Sleep(desiredTime.Sub(t))
-}
-
-func (b *Bot) isMessageFromAllowedChat(update tgbotapi.Update) bool {
-	if update.Message.Chat.ID == b.GroupID {
-		return true
-	}
-	for _, un := range b.AllowedUsernames {
-		if un == update.Message.Chat.UserName {
-			return true
-		}
-	}
-	return false
 }
