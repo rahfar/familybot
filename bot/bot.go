@@ -154,6 +154,12 @@ func (b *Bot) sendMessage(msg tgbotapi.MessageConfig) {
 
 	msgText := msg.Text
 	msgLength := len(msgText)
+
+	if msgLength == 0 {
+		slog.Info("zero length msg would not be send")
+		return
+	}
+
 	msgParts := (msgLength + maxMsgLength - 1) / maxMsgLength // Ceiling division
 
 	for i := 0; i < msgParts; i++ {
@@ -163,7 +169,7 @@ func (b *Bot) sendMessage(msg tgbotapi.MessageConfig) {
 			end = msgLength
 		}
 
-		msg.Text = msgText[start:end]
+		msg.Text = strings.ToValidUTF8(msgText[start:end], "")
 
 		for i := 1; i <= maxRetry; i++ {
 			_, err := b.TGBotAPI.Send(msg)
