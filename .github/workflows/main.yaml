@@ -1,6 +1,7 @@
 name: build and deploy
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -10,30 +11,30 @@ jobs:
     runs-on: self-hosted
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Build Docker Image
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        tags: ghcr.io/${{ github.repository }}:latest
+      - name: Build Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          tags: ghcr.io/${{ github.repository }}:latest
 
-    - name: Get Secrets
-      uses: bitwarden/sm-action@v1
-      with:
-        access_token: ${{ secrets.BWS_ACCESS_TOKEN }}
-        secrets: |
-          7f42da1c-25ae-497a-89de-b041013fa10a > TELEGRAM_TOKEN
-          0a25642b-b877-4415-962b-b041013fb276 > TELEGRAM_GROUP
-          bc6f96c0-c7a9-4273-bac0-b041013fc1fa > TELEGRAM_ALLOWEDUSERNAMES
-          627efa5d-6fdb-48bd-8956-b041013fcdab > WEATHERAPI_KEY
-          b57dcf52-8a51-4a73-ab80-b041013fd903 > WEATHERAPI_CITIES
-          3cdeba53-2ee5-49c6-9956-b041013fe498 > CURRENCYAPI_KEY
-          645021f0-b0eb-41af-9aa9-b041013ff1a5 > OPENAIAPI_KEY
-          6131896a-5721-4ed7-98d7-b041014019e9 > GOOGLESHEETSAPI_KEY
-          29e623d9-22ec-4873-b8ab-b041013ffede > GOOGLESHEETSAPI_SPREADSHEETID
-      
-    - name: Deploy
-      run: |
-        cd deployment
-        docker compose up -d
+      - name: Get Secrets
+        uses: bitwarden/sm-action@v1
+        with:
+          access_token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            7f42da1c-25ae-497a-89de-b041013fa10a > TELEGRAM_TOKEN
+            0a25642b-b877-4415-962b-b041013fb276 > TELEGRAM_GROUP
+            bc6f96c0-c7a9-4273-bac0-b041013fc1fa > TELEGRAM_ALLOWEDUSERNAMES
+            627efa5d-6fdb-48bd-8956-b041013fcdab > WEATHERAPI_KEY
+            b57dcf52-8a51-4a73-ab80-b041013fd903 > WEATHERAPI_CITIES
+            3cdeba53-2ee5-49c6-9956-b041013fe498 > CURRENCYAPI_KEY
+            645021f0-b0eb-41af-9aa9-b041013ff1a5 > OPENAIAPI_KEY
+            6131896a-5721-4ed7-98d7-b041014019e9 > GOOGLESHEETSAPI_KEY
+            29e623d9-22ec-4873-b8ab-b041013ffede > GOOGLESHEETSAPI_SPREADSHEETID
+
+      - name: Deploy
+        run: |
+          cd deployment
+          docker compose up -d
