@@ -11,8 +11,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/jessevdk/go-flags"
 
-	"github.com/rahfar/familybot/bot"
-	"github.com/rahfar/familybot/bot/apiclient"
+	"github.com/rahfar/familybot/src/bot"
+	"github.com/rahfar/familybot/src/apiclient"
 )
 
 var opts struct {

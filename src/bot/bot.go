@@ -9,7 +9,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
-	"github.com/rahfar/familybot/bot/apiclient"
+	"github.com/rahfar/familybot/src/apiclient"
 )
 
 type Bot struct {
