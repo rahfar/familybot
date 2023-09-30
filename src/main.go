@@ -11,8 +11,9 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/jessevdk/go-flags"
 
-	"github.com/rahfar/familybot/src/bot"
 	"github.com/rahfar/familybot/src/apiclient"
+	"github.com/rahfar/familybot/src/bot"
+	"github.com/rahfar/familybot/src/db"
 )
 
 var opts struct {
@@ -35,7 +36,8 @@ var opts struct {
 		Key           string `long:"key" env:"KEY"`
 		SpreadSheetID string `long:"spreadsheetid" env:"SPREADSHEETID"`
 	} `group:"googlesheetsapi" namespace:"googlesheetsapi" env-namespace:"GOOGLESHEETSAPI"`
-	Dbg bool `long:"debug" env:"DEBUG" description:"debug mode"`
+	SqlitePath string `long:"sqlitepath" env:"SQLITEPATH" default:"db.sqlite"`
+	Dbg        bool   `long:"debug" env:"DEBUG" description:"debug mode"`
 }
 
 func main() {
@@ -47,6 +49,9 @@ func main() {
 		slog.Error("Error parsing options")
 		panic(err)
 	}
+
+	db.InitDB(opts.SqlitePath)
+	slog.Info("db initialized")
 
 	bot_api, err := tgbotapi.NewBotAPI(opts.Telegram.Token)
 	if err != nil {
