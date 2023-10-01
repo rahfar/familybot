@@ -10,6 +10,12 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
+type GPTResponse struct {
+	Role    string
+	Content string
+	Time    time.Time
+}
+
 type OpenaiAPI struct {
 	ApiKey     string
 	HttpClient *http.Client
@@ -17,24 +23,26 @@ type OpenaiAPI struct {
 
 const maxPromptSymbolSize = 2000
 
-func (o *OpenaiAPI) CallGPT3dot5(question string) (string, error) {
+func (o *OpenaiAPI) CallGPT3dot5(question string, responseHistory []GPTResponse) (string, error) {
 	const maxRetry = 3
 
 	if len(question) > maxPromptSymbolSize {
 		return "Слишком длинный вопрос, попробуйте покороче", nil
 	}
+
+	messages := make([]openai.ChatCompletionMessage, 0)
+	for _, v := range responseHistory {
+		messages = append(messages, openai.ChatCompletionMessage{Role: v.Role, Content: v.Content})
+	}
+	messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: question})
+
 	for i := 1; i <= maxRetry; i++ {
 		client := openai.NewClient(o.ApiKey)
 		resp, err := client.CreateChatCompletion(
 			context.Background(),
 			openai.ChatCompletionRequest{
-				Model: openai.GPT3Dot5Turbo,
-				Messages: []openai.ChatCompletionMessage{
-					{
-						Role:    openai.ChatMessageRoleUser,
-						Content: question,
-					},
-				},
+				Model:    openai.GPT3Dot5Turbo,
+				Messages: messages,
 			},
 		)
 		if err == nil {

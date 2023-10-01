@@ -8,10 +8,14 @@ import (
 	"os"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	openai "github.com/sashabaranov/go-openai"
+
+	"github.com/rahfar/familybot/src/apiclient"
 )
 
 func ping(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
@@ -36,15 +40,37 @@ func getCurrentWeather(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 
 func askChatGPT(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 	question := removeFirstWord(msg.Text)
-	ans, err := bot.OpenaiAPI.CallGPT3dot5(question)
+
+	responseHistory, ok := bot.AskGPTCache.Get(strconv.FormatInt(msg.Chat.ID, 10))
+	if !ok {
+		responseHistory = make([]apiclient.GPTResponse, 0)
+	}
+	responseHistory = filterOldGPTResponce(responseHistory)
+
+	ans, err := bot.OpenaiAPI.CallGPT3dot5(question, responseHistory)
 	if err != nil || len(ans) == 0 {
 		slog.Error("error occured while call openai", "err", err)
 		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
 	}
+
+	responseHistory = append(responseHistory, apiclient.GPTResponse{Role: openai.ChatMessageRoleAssistant, Content: ans, Time: time.Now()})
+	responseHistory = append(responseHistory, apiclient.GPTResponse{Role: openai.ChatMessageRoleUser, Content: question, Time: time.Now()})
+	bot.AskGPTCache.Add(strconv.FormatInt(msg.Chat.ID, 10), responseHistory)
+
 	resp := tgbotapi.NewMessage(msg.Chat.ID, ans)
 	resp.ParseMode = tgbotapi.ModeMarkdown
 	resp.DisableWebPagePreview = true
 	return resp
+}
+
+func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.GPTResponse {
+	filtered := make([]apiclient.GPTResponse, 0)
+	for _, v := range responseHistory {
+		if v.Time.After(time.Now().Add(-5 * time.Minute)) {
+			filtered = append(filtered, v)
+		}
+	}
+	return filtered
 }
 
 func getYesterdaySales(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {

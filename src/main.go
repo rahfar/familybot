@@ -10,9 +10,10 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/jessevdk/go-flags"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 
-	"github.com/rahfar/familybot/src/bot"
 	"github.com/rahfar/familybot/src/apiclient"
+	"github.com/rahfar/familybot/src/bot"
 )
 
 var opts struct {
@@ -74,6 +75,7 @@ func main() {
 		AllowedUsernames: strings.Split(opts.Telegram.AllowedUsernames, ","),
 		GroupID:          opts.Telegram.GroupID,
 		Commands:         bot.Commands,
+		AskGPTCache:      expirable.NewLRU[string, []apiclient.GPTResponse](1000, nil, time.Minute*30),
 		AnekdotAPI:       anekdotAPI,
 		ExchangeAPI:      exchangeAPI,
 		SheetsAPI:        sheetsAPI,

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 
 	"github.com/rahfar/familybot/src/apiclient"
 )
@@ -18,6 +19,7 @@ type Bot struct {
 	AllowedUsernames []string
 	GroupID          int64
 	Commands         []Command
+	AskGPTCache      *expirable.LRU[string, []apiclient.GPTResponse]
 	TGBotAPI         *tgbotapi.BotAPI
 	AnekdotAPI       *apiclient.AnecdoteAPI
 	ExchangeAPI      *apiclient.ExchangeAPI
