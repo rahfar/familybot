@@ -32,10 +32,6 @@ var opts struct {
 	OpenaiAPI struct {
 		Key string `long:"key" env:"KEY"`
 	} `group:"openaiapi" namespace:"openaiapi" env-namespace:"OPENAIAPI"`
-	GoogleSheetsAPI struct {
-		Key           string `long:"key" env:"KEY"`
-		SpreadSheetID string `long:"spreadsheetid" env:"SPREADSHEETID"`
-	} `group:"googlesheetsapi" namespace:"googlesheetsapi" env-namespace:"GOOGLESHEETSAPI"`
 	Dbg bool `long:"debug" env:"DEBUG" description:"debug mode"`
 }
 
@@ -64,7 +60,6 @@ func main() {
 
 	anekdotAPI := &apiclient.AnecdoteAPI{HttpClient: httpClient}
 	exchangeAPI := &apiclient.ExchangeAPI{ApiKey: opts.CurrencyAPI.Key, HttpClient: httpClient}
-	sheetsAPI := &apiclient.SheetsAPI{ApiKey: opts.GoogleSheetsAPI.Key, SpreadsheetId: opts.GoogleSheetsAPI.SpreadSheetID}
 	kommerstantAPI := &apiclient.KommersantAPI{HttpClient: httpClient}
 	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: openaiHttpClient}
 	weatherAPI := &apiclient.WeatherAPI{ApiKey: opts.WeatherAPI.Key, Cities: opts.WeatherAPI.Cities, HttpClient: httpClient}
@@ -78,7 +73,6 @@ func main() {
 		AskGPTCache:      expirable.NewLRU[string, []apiclient.GPTResponse](1000, nil, time.Minute*30),
 		AnekdotAPI:       anekdotAPI,
 		ExchangeAPI:      exchangeAPI,
-		SheetsAPI:        sheetsAPI,
 		KommersantAPI:    kommerstantAPI,
 		OpenaiAPI:        openaiAPI,
 		WeatherAPI:       weatherAPI,

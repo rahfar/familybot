@@ -13,6 +13,4 @@ services:
       - WEATHERAPI_CITIES
       - CURRENCYAPI_KEY
       - OPENAIAPI_KEY
-      - GOOGLESHEETSAPI_KEY
-      - GOOGLESHEETSAPI_SPREADSHEETID
     restart: unless-stopped

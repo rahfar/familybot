@@ -31,9 +31,6 @@ jobs:
             b57dcf52-8a51-4a73-ab80-b041013fd903 > WEATHERAPI_CITIES
             3cdeba53-2ee5-49c6-9956-b041013fe498 > CURRENCYAPI_KEY
             645021f0-b0eb-41af-9aa9-b041013ff1a5 > OPENAIAPI_KEY
-            6131896a-5721-4ed7-98d7-b041014019e9 > GOOGLESHEETSAPI_KEY
-            29e623d9-22ec-4873-b8ab-b041013ffede > GOOGLESHEETSAPI_SPREADSHEETID
-
       - name: Deploy
         run: |
           cd deployment

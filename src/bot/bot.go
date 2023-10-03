@@ -23,7 +23,6 @@ type Bot struct {
 	TGBotAPI         *tgbotapi.BotAPI
 	AnekdotAPI       *apiclient.AnecdoteAPI
 	ExchangeAPI      *apiclient.ExchangeAPI
-	SheetsAPI        *apiclient.SheetsAPI
 	KommersantAPI    *apiclient.KommersantAPI
 	OpenaiAPI        *apiclient.OpenaiAPI
 	WeatherAPI       *apiclient.WeatherAPI

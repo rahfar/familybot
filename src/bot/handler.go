@@ -73,15 +73,6 @@ func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.G
 	return filtered
 }
 
-func getYesterdaySales(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
-	yesterday := time.Now().Add(-24 * time.Hour)
-	_, month_total, err := bot.SheetsAPI.CallGoogleSheetsApi(yesterday.Day(), int(yesterday.Month()))
-	if err != nil {
-		return tgbotapi.NewMessage(msg.Chat.ID, "Возникла ошибка при чтении данных :(")
-	}
-	return tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("Продажи с начала мес: %.2f₽\n", month_total))
-}
-
 func getAnecdote(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 	anecdote, err := bot.AnekdotAPI.CallAnecdoteAPI()
 	if err != nil || len(anecdote) == 0 {
