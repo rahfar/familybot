@@ -50,24 +50,23 @@ func (b *Bot) Run() {
 }
 
 func (b *Bot) onMessage(msg tgbotapi.Message) {
-	var resp tgbotapi.MessageConfig
 	words := strings.Split(msg.Text, " ")
 	cmd := findCommand(b.Commands, words[0])
 	if cmd != nil {
-		resp = cmd.Handler(b, &msg)
+		cmd.Handler(b, &msg)
 	} else if strings.EqualFold(words[0], "!команды") {
 		help_text := "Доступные команды:\n"
 		for _, c := range b.Commands {
 			help_text += strings.Join(c.Names, ", ") + " - " + c.Description + "\n"
 		}
-		resp = tgbotapi.NewMessage(msg.Chat.ID, help_text)
+		resp := tgbotapi.NewMessage(msg.Chat.ID, help_text)
+		resp.ReplyToMessageID = msg.MessageID
+		b.sendMessage(resp)
 	} else if msg.Voice != nil {
-		resp = transcriptVoice(b, &msg)
+		transcriptVoice(b, &msg)
 	} else {
 		return
 	}
-	resp.ReplyToMessageID = msg.MessageID
-	b.sendMessage(resp)
 }
 
 func (b *Bot) mourningJob() {
@@ -191,6 +190,25 @@ func (b *Bot) sendMessage(msg tgbotapi.MessageConfig) {
 				slog.Error("error sending message", "err", err, "message", msg.Text)
 				return
 			}
+		}
+	}
+}
+
+func (b *Bot) sendPhoto(msg tgbotapi.PhotoConfig) {
+	const maxRetry = 3
+
+	for i := 1; i <= maxRetry; i++ {
+		_, err := b.TGBotAPI.Send(msg)
+		if err == nil {
+			break
+		}
+
+		if i < maxRetry {
+			slog.Info("error sending photo, retrying in 5 seconds...", "err", err, "retry-cnt", i)
+			time.Sleep(5 * time.Second)
+		} else {
+			slog.Error("error sending photo", "err", err)
+			return
 		}
 	}
 }

@@ -9,7 +9,7 @@ import (
 type Command struct {
 	Names       []string
 	Description string
-	Handler     func(*Bot, *tgbotapi.Message) tgbotapi.MessageConfig
+	Handler     func(*Bot, *tgbotapi.Message)
 }
 
 func findCommand(commands []Command, name string) *Command {
@@ -48,5 +48,10 @@ var Commands = []Command{
 		Names:       []string{"!новости", "!news"},
 		Description: "Последние новости с сайта Коммерсант.",
 		Handler:     getLatestNews,
+	},
+	{
+		Names:       []string{"!картинка", "!picture"},
+		Description: "Генерация картинки с помощью DALL-E.",
+		Handler:     generateImage,
 	},
 }

@@ -82,3 +82,29 @@ func (o *OpenaiAPI) CallWhisper(filePath string) (string, error) {
 	}
 	return "", fmt.Errorf("max retries reached")
 }
+
+func (o *OpenaiAPI) CallDalle(prompt string) (string, error) {
+	const maxRetry = 3
+	c := openai.NewClient(o.ApiKey)
+	ctx := context.Background()
+	// Sample image by link
+	reqUrl := openai.ImageRequest{
+		Prompt:         prompt,
+		Size:           openai.CreateImageSize256x256,
+		ResponseFormat: openai.CreateImageResponseFormatURL,
+		N:              1,
+	}
+	for i := 1; i <= maxRetry; i++ {
+		respUrl, err := c.CreateImage(ctx, reqUrl)
+		if err == nil {
+			return respUrl.Data[0].URL, nil
+		}
+		if APIError, ok := err.(*openai.APIError); ok && i < maxRetry {
+			slog.Info("got error response from api, retrying in 5 seconds...", "retry-cnt", i, "status", APIError.HTTPStatusCode)
+			time.Sleep(5 * time.Second)
+		} else {
+			return "", err
+		}
+	}
+	return "", fmt.Errorf("max retries reached")
+}

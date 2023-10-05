@@ -18,49 +18,60 @@ import (
 	"github.com/rahfar/familybot/src/apiclient"
 )
 
-func ping(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
-	return tgbotapi.NewMessage(msg.Chat.ID, "понг")
+func ping(b *Bot, msg *tgbotapi.Message) {
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "понг")
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
 }
 
-func getCurrentWeather(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
-	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
-	weather := bot.WeatherAPI.GetWeather()
+func getCurrentWeather(b *Bot, msg *tgbotapi.Message) {
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "")
+	weather := b.WeatherAPI.GetWeather()
 	sort.Slice(weather, func(i, j int) bool {
 		return weather[i].Current.Temp < weather[j].Current.Temp
 	})
 	if len(weather) > 0 {
 		for _, w := range weather {
-			resp.Text += fmt.Sprintf("%s: %+g°C (max: %+g°C, min: %+g°C), %s\n", w.Location.Name, w.Current.Temp, w.Forecast.Forecastday[0].Day.Maxtemp_c, w.Forecast.Forecastday[0].Day.Mintemp_c, w.Current.Condition.Text)
+			msgConfig.Text += fmt.Sprintf("%s: %+g°C (max: %+g°C, min: %+g°C), %s\n", w.Location.Name, w.Current.Temp, w.Forecast.Forecastday[0].Day.Maxtemp_c, w.Forecast.Forecastday[0].Day.Mintemp_c, w.Current.Condition.Text)
 		}
-		return resp
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
 	} else {
-		return tgbotapi.NewMessage(msg.Chat.ID, "Нет данных")
+		msgConfig = tgbotapi.NewMessage(msg.Chat.ID, "Нет данных")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
 	}
 }
 
-func askChatGPT(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
+func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 	question := removeFirstWord(msg.Text)
 
-	responseHistory, ok := bot.AskGPTCache.Get(strconv.FormatInt(msg.Chat.ID, 10))
+	responseHistory, ok := b.AskGPTCache.Get(strconv.FormatInt(msg.Chat.ID, 10))
 	if !ok {
 		responseHistory = make([]apiclient.GPTResponse, 0)
 	}
 	responseHistory = filterOldGPTResponce(responseHistory)
 
-	ans, err := bot.OpenaiAPI.CallGPT3dot5(question, responseHistory)
+	ans, err := b.OpenaiAPI.CallGPT3dot5(question, responseHistory)
 	if err != nil || len(ans) == 0 {
 		slog.Error("error occured while call openai", "err", err)
-		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
 	}
 
 	responseHistory = append(responseHistory, apiclient.GPTResponse{Role: openai.ChatMessageRoleAssistant, Content: ans, Time: time.Now()})
 	responseHistory = append(responseHistory, apiclient.GPTResponse{Role: openai.ChatMessageRoleUser, Content: question, Time: time.Now()})
-	bot.AskGPTCache.Add(strconv.FormatInt(msg.Chat.ID, 10), responseHistory)
+	b.AskGPTCache.Add(strconv.FormatInt(msg.Chat.ID, 10), responseHistory)
 
-	resp := tgbotapi.NewMessage(msg.Chat.ID, ans)
-	resp.ParseMode = tgbotapi.ModeMarkdown
-	resp.DisableWebPagePreview = true
-	return resp
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, ans)
+	msgConfig.ParseMode = tgbotapi.ModeMarkdown
+	msgConfig.DisableWebPagePreview = true
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
 }
 
 func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.GPTResponse {
@@ -73,38 +84,49 @@ func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.G
 	return filtered
 }
 
-func getAnecdote(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
-	anecdote, err := bot.AnekdotAPI.CallAnecdoteAPI()
+func getAnecdote(b *Bot, msg *tgbotapi.Message) {
+	anecdote, err := b.AnekdotAPI.CallAnecdoteAPI()
 	if err != nil || len(anecdote) == 0 {
 		slog.Error("error calling anecdote api", "err", err)
-		return tgbotapi.NewMessage(msg.Chat.ID, "Не смог получить свежий анекдот :(")
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Не смог получить свежий анекдот :(")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
 	}
-	return tgbotapi.NewMessage(msg.Chat.ID, anecdote)
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, anecdote)
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
 }
 
-func getLatestNews(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
-	news, err := bot.KommersantAPI.CallKommersantAPI()
+func getLatestNews(b *Bot, msg *tgbotapi.Message) {
+	news, err := b.KommersantAPI.CallKommersantAPI()
 	if (err != nil) || (len(news) == 0) {
 		slog.Error("error calling news api", "err", err)
-		return tgbotapi.NewMessage(msg.Chat.ID, "Не смог получить последние новости :(")
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Не смог получить последние новости :(")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
 	}
 	fmt_news := "\nПоследние новости:\n"
 	for i, n := range news[:3] {
 		fmt_news += fmt.Sprintf("%d. [%s](%s)\n", i+1, n.Title, n.Link)
 	}
-	resp := tgbotapi.NewMessage(msg.Chat.ID, fmt_news)
-	resp.ParseMode = tgbotapi.ModeMarkdown
-	resp.DisableWebPagePreview = true
-	return resp
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, fmt_news)
+	msgConfig.ParseMode = tgbotapi.ModeMarkdown
+	msgConfig.DisableWebPagePreview = true
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
 }
 
-func transcriptVoice(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
+func transcriptVoice(b *Bot, msg *tgbotapi.Message) {
 	// Get direct link to audio message
-	link, err := bot.TGBotAPI.GetFileDirectURL(msg.Voice.FileID)
+	link, err := b.TGBotAPI.GetFileDirectURL(msg.Voice.FileID)
 	if err != nil {
 		slog.Error("getting voice msg", "err", err)
-		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при скачивании голосового сообщения")
-
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при скачивании голосового сообщения")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
 	}
 	filename := "/tmp/" + msg.Voice.FileID + path.Ext(link)
 	slog.Debug("saving audio", "filename", filename)
@@ -112,14 +134,20 @@ func transcriptVoice(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 	resp, err := http.Get(link)
 	if err != nil {
 		slog.Error("getting voice msg", "err", err)
-		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при скачивании голосового сообщения")
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при скачивании голосового сообщения")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
 	}
 	defer resp.Body.Close()
 
 	// Create the output file
 	file, err := os.Create(filename)
 	if err != nil {
-		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при скачивании голосового сообщения")
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при скачивании голосового сообщения")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
 	}
 	defer file.Close()
 	defer os.Remove(filename)
@@ -127,15 +155,38 @@ func transcriptVoice(bot *Bot, msg *tgbotapi.Message) tgbotapi.MessageConfig {
 	// Write the response body to the file
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
-		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при скачивании голосового сообщения")
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при скачивании голосового сообщения")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
 	}
 
-	text, err := bot.OpenaiAPI.CallWhisper(filename)
+	text, err := b.OpenaiAPI.CallWhisper(filename)
 	if err != nil {
 		slog.Error("getting voice msg", "err", err)
-		return tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при обработки голосового сообщения")
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при обработки голосового сообщения")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
 	}
-	return tgbotapi.NewMessage(msg.Chat.ID, text)
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, text)
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
+}
+
+func generateImage(b *Bot, msg *tgbotapi.Message) {
+	prompt := removeFirstWord(msg.Text)
+	imgURL, err := b.OpenaiAPI.CallDalle(prompt)
+	if err != nil {
+		slog.Error("generating image", "err", err)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при генерации картинки :(")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+	photoConfig := tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileURL(imgURL))
+	photoConfig.ReplyToMessageID = msg.MessageID
+	b.sendPhoto(photoConfig)
 }
 
 func removeFirstWord(input string) string {
