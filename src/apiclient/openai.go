@@ -19,11 +19,12 @@ type GPTResponse struct {
 type OpenaiAPI struct {
 	ApiKey     string
 	HttpClient *http.Client
+	GPTModel   string
 }
 
 const maxPromptSymbolSize = 2000
 
-func (o *OpenaiAPI) CallGPT3dot5(question string, responseHistory []GPTResponse) (string, error) {
+func (o *OpenaiAPI) CallGPT(question string, responseHistory []GPTResponse) (string, error) {
 	const maxRetry = 3
 
 	if len(question) > maxPromptSymbolSize {
@@ -41,7 +42,7 @@ func (o *OpenaiAPI) CallGPT3dot5(question string, responseHistory []GPTResponse)
 		resp, err := client.CreateChatCompletion(
 			context.Background(),
 			openai.ChatCompletionRequest{
-				Model:    openai.GPT3Dot5Turbo,
+				Model:    o.GPTModel,
 				Messages: messages,
 			},
 		)

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/jessevdk/go-flags"
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/jessevdk/go-flags"
 
 	"github.com/rahfar/familybot/src/apiclient"
 	"github.com/rahfar/familybot/src/bot"
@@ -30,7 +30,8 @@ var opts struct {
 		Key string `long:"key" env:"KEY"`
 	} `group:"currencyapi" namespace:"currencyapi" env-namespace:"CURRENCYAPI"`
 	OpenaiAPI struct {
-		Key string `long:"key" env:"KEY"`
+		Key      string `long:"key" env:"KEY"`
+		GPTModel string `long:"gptmodel" env:"GPTMODEL" default:"gpt-3.5-turbo"`
 	} `group:"openaiapi" namespace:"openaiapi" env-namespace:"OPENAIAPI"`
 	Dbg bool `long:"debug" env:"DEBUG" description:"debug mode"`
 }
@@ -61,7 +62,7 @@ func main() {
 	anekdotAPI := &apiclient.AnecdoteAPI{HttpClient: httpClient}
 	exchangeAPI := &apiclient.ExchangeAPI{ApiKey: opts.CurrencyAPI.Key, HttpClient: httpClient}
 	kommerstantAPI := &apiclient.KommersantAPI{HttpClient: httpClient}
-	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: openaiHttpClient}
+	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: openaiHttpClient, GPTModel: opts.OpenaiAPI.GPTModel}
 	weatherAPI := &apiclient.WeatherAPI{ApiKey: opts.WeatherAPI.Key, Cities: opts.WeatherAPI.Cities, HttpClient: httpClient}
 
 	b := bot.Bot{

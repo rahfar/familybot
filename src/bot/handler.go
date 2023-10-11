@@ -54,7 +54,7 @@ func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 	}
 	responseHistory = filterOldGPTResponce(responseHistory)
 
-	ans, err := b.OpenaiAPI.CallGPT3dot5(question, responseHistory)
+	ans, err := b.OpenaiAPI.CallGPT(question, responseHistory)
 	if err != nil || len(ans) == 0 {
 		slog.Error("error occured while call openai", "err", err)
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
