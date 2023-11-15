@@ -13,5 +13,5 @@ services:
       - WEATHERAPI_CITIES
       - CURRENCYAPI_KEY
       - OPENAIAPI_KEY
-      - OPENAIAPI_GPTMODEL=gpt-4
+      - OPENAIAPI_GPTMODEL=gpt-4-1106-preview
     restart: unless-stopped
