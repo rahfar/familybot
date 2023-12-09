@@ -35,7 +35,7 @@ var Commands = []Command{
 		Handler:     getCurrentWeather,
 	},
 	{
-		Names:       []string{"!чат", "!gpt"},
+		Names:       []string{"!чат", "!гпт", "!gpt", "!chat"},
 		Description: "Спросить ChatGPT.",
 		Handler:     askChatGPT,
 	},
