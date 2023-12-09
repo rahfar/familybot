@@ -18,6 +18,8 @@ jobs:
         with:
           context: .
           tags: ghcr.io/${{ github.repository }}:latest
+          build-args: |
+            REVISION=${{ github.sha }} 
 
       - name: Get Secrets
         uses: bitwarden/sm-action@v1

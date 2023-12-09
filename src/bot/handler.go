@@ -204,3 +204,13 @@ func removeFirstWord(input string) string {
 
 	return result
 }
+
+func getRevision(b *Bot, msg *tgbotapi.Message) {
+	rev := os.Getenv("REVISION")
+	if len(rev) == 0 {
+		return
+	}
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, rev)
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
+}

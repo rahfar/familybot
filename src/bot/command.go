@@ -54,4 +54,9 @@ var Commands = []Command{
 		Description: "Генерация картинки с помощью DALL-E.",
 		Handler:     generateImage,
 	},
+	{
+		Names:       []string{"!ревизия", "!revision"},
+		Description: "Версия бота.",
+		Handler:     getRevision,
+	},
 }
