@@ -22,7 +22,7 @@ type OpenaiAPI struct {
 	GPTModel   string
 }
 
-const maxPromptSymbolSize = 2000
+const maxPromptSymbolSize = 4096
 
 func (o *OpenaiAPI) CallGPT(question string, responseHistory []GPTResponse) (string, error) {
 	const maxRetry = 3
