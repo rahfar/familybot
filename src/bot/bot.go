@@ -26,6 +26,8 @@ type Bot struct {
 	KommersantAPI    *apiclient.KommersantAPI
 	OpenaiAPI        *apiclient.OpenaiAPI
 	WeatherAPI       *apiclient.WeatherAPI
+	MinifluxAPI      *apiclient.MinifluxAPI
+	DeeplAPI         *apiclient.DeeplAPI
 }
 
 func (b *Bot) Run() {
@@ -114,13 +116,18 @@ func (b *Bot) mourningJob() {
 		}
 
 		// call news api
-		news, err := b.KommersantAPI.CallKommersantAPI()
+		news, err := b.MinifluxAPI.GetLatestNews()
 		if (err != nil) || (len(news) == 0) {
 			slog.Error("error calling news api", "err", err)
 		} else {
 			fmt_news := "\nПоследние новости:\n"
-			for i, n := range news[:3] {
-				fmt_news += fmt.Sprintf("%d. [%s](%s)\n", i+1, n.Title, n.Link)
+			for i, n := range news {
+				translatedTitle, err := b.DeeplAPI.CallDeeplAPI(n.Title)
+				if err != nil {
+					slog.Error("error calling deepl api", "err", err)
+					translatedTitle = n.Title
+				}
+				fmt_news += fmt.Sprintf("%d. [%s](%s)\n", i+1, translatedTitle, n.URL)
 			}
 			text += fmt_news
 		}

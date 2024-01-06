@@ -39,3 +39,6 @@ golang.org/x/text/internal/utf8internal
 golang.org/x/text/language
 golang.org/x/text/runes
 golang.org/x/text/transform
+# miniflux.app v1.0.46
+## explicit; go 1.19
+miniflux.app/client

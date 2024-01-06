@@ -33,6 +33,8 @@ jobs:
             b57dcf52-8a51-4a73-ab80-b041013fd903 > WEATHERAPI_CITIES
             3cdeba53-2ee5-49c6-9956-b041013fe498 > CURRENCYAPI_KEY
             645021f0-b0eb-41af-9aa9-b041013ff1a5 > OPENAIAPI_KEY
+            457ec119-e932-4cbd-8ad2-b0ef00e47798 > MINIFLUXAPI_KEY
+            0d11a328-87b9-4ade-837b-b0ef00e4baff > DEEPLAPI_KEY
       - name: Deploy
         run: |
           cd deployment

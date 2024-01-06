@@ -33,6 +33,15 @@ var opts struct {
 		Key      string `long:"key" env:"KEY"`
 		GPTModel string `long:"gptmodel" env:"GPTMODEL" default:"gpt-3.5-turbo"`
 	} `group:"openaiapi" namespace:"openaiapi" env-namespace:"OPENAIAPI"`
+	MinifluxAPI struct {
+		Key     string `long:"key" env:"KEY"`
+		BaseURL string `long:"baseurl" env:"BASEURL"`
+		SiteURL string `long:"siteurl" env:"SITEURL"`
+	} `group:"minifluxapi" namespace:"minifluxapi" env-namespace:"minifluxapi"`
+	DeeplAPI struct {
+		Key     string `long:"key" env:"KEY"`
+		BaseURL string `long:"baseurl" env:"BASEURL" default:"https://api-free.deepl.com"`
+	} `group:"deeplapi" namespace:"deeplapi" env-namespace:"deeplapi"`
 	Dbg bool `long:"debug" env:"DEBUG" description:"debug mode"`
 }
 
@@ -64,7 +73,8 @@ func main() {
 	kommerstantAPI := &apiclient.KommersantAPI{HttpClient: httpClient}
 	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: openaiHttpClient, GPTModel: opts.OpenaiAPI.GPTModel}
 	weatherAPI := &apiclient.WeatherAPI{ApiKey: opts.WeatherAPI.Key, Cities: opts.WeatherAPI.Cities, HttpClient: httpClient}
-
+	deeplAPI := &apiclient.DeeplAPI{ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
+	minifluxAPI := &apiclient.MinifluxAPI{ApiKey: opts.MinifluxAPI.Key, BaseURL: opts.MinifluxAPI.Key, SiteURL: opts.MinifluxAPI.SiteURL}
 	b := bot.Bot{
 		Token:            opts.Telegram.Token,
 		Dbg:              opts.Dbg,
@@ -78,6 +88,8 @@ func main() {
 		OpenaiAPI:        openaiAPI,
 		WeatherAPI:       weatherAPI,
 		TGBotAPI:         bot_api,
+		MinifluxAPI:      minifluxAPI,
+		DeeplAPI:         deeplAPI,
 	}
 	b.Run()
 }

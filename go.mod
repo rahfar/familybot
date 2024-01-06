@@ -8,6 +8,7 @@ require (
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/sashabaranov/go-openai v1.17.9
 	golang.org/x/net v0.19.0
+	miniflux.app v1.0.46
 )
 
 require (

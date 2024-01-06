@@ -14,4 +14,8 @@ services:
       - CURRENCYAPI_KEY
       - OPENAIAPI_KEY
       - OPENAIAPI_GPTMODEL=gpt-4-1106-preview
+      - MINIFLUXAPI_KEY
+      - MINIFLUXAPI_BASEURL=https://miniflux.rahfar.com
+      - MINIFLUXAPI_SITEURL=https://www.nytimes.com
+      - DEEPLAPI_KEY
     restart: unless-stopped
