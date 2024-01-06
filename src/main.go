@@ -37,11 +37,11 @@ var opts struct {
 		Key     string `long:"key" env:"KEY"`
 		BaseURL string `long:"baseurl" env:"BASEURL"`
 		SiteURL string `long:"siteurl" env:"SITEURL"`
-	} `group:"minifluxapi" namespace:"minifluxapi" env-namespace:"minifluxapi"`
+	} `group:"minifluxapi" namespace:"minifluxapi" env-namespace:"MINIFLUXAPI"`
 	DeeplAPI struct {
 		Key     string `long:"key" env:"KEY"`
 		BaseURL string `long:"baseurl" env:"BASEURL" default:"https://api-free.deepl.com"`
-	} `group:"deeplapi" namespace:"deeplapi" env-namespace:"deeplapi"`
+	} `group:"deeplapi" namespace:"deeplapi" env-namespace:"DEEPLAPI"`
 	Dbg bool `long:"debug" env:"DEBUG" description:"debug mode"`
 }
 
@@ -70,11 +70,11 @@ func main() {
 
 	anekdotAPI := &apiclient.AnecdoteAPI{HttpClient: httpClient}
 	exchangeAPI := &apiclient.ExchangeAPI{ApiKey: opts.CurrencyAPI.Key, HttpClient: httpClient}
-	kommerstantAPI := &apiclient.KommersantAPI{HttpClient: httpClient}
 	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: openaiHttpClient, GPTModel: opts.OpenaiAPI.GPTModel}
 	weatherAPI := &apiclient.WeatherAPI{ApiKey: opts.WeatherAPI.Key, Cities: opts.WeatherAPI.Cities, HttpClient: httpClient}
-	deeplAPI := &apiclient.DeeplAPI{ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
-	minifluxAPI := &apiclient.MinifluxAPI{ApiKey: opts.MinifluxAPI.Key, BaseURL: opts.MinifluxAPI.Key, SiteURL: opts.MinifluxAPI.SiteURL}
+	deeplAPI := &apiclient.DeeplAPI{HttpClient: httpClient, ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
+	minifluxAPI := &apiclient.MinifluxAPI{ApiKey: opts.MinifluxAPI.Key, BaseURL: opts.MinifluxAPI.BaseURL, SiteURL: opts.MinifluxAPI.SiteURL}
+
 	b := bot.Bot{
 		Token:            opts.Telegram.Token,
 		Dbg:              opts.Dbg,
@@ -84,7 +84,6 @@ func main() {
 		AskGPTCache:      expirable.NewLRU[string, []apiclient.GPTResponse](1000, nil, time.Minute*30),
 		AnekdotAPI:       anekdotAPI,
 		ExchangeAPI:      exchangeAPI,
-		KommersantAPI:    kommerstantAPI,
 		OpenaiAPI:        openaiAPI,
 		WeatherAPI:       weatherAPI,
 		TGBotAPI:         bot_api,

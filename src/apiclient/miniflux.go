@@ -13,7 +13,7 @@ type MinifluxAPI struct {
 	SiteURL string
 }
 
-func (m *MinifluxAPI) GetLatestNews() (miniflux.Entries, error) {
+func (m *MinifluxAPI) GetLatestNews(cnt int) (miniflux.Entries, error) {
 	client := miniflux.New(m.BaseURL, m.ApiKey)
 
 	// Fetch all feeds.
@@ -25,10 +25,11 @@ func (m *MinifluxAPI) GetLatestNews() (miniflux.Entries, error) {
 	for _, f := range feeds {
 		if strings.HasPrefix(f.SiteURL, m.SiteURL) {
 			myFeed = f
+			break
 		}
 	}
-	if myFeed.ID != 0 {
-		entries, err := client.Entries(&miniflux.Filter{FeedID: myFeed.ID, Limit: 3, Order: "published_at", Direction: "desc"})
+	if myFeed != nil {
+		entries, err := client.Entries(&miniflux.Filter{FeedID: myFeed.ID, Limit: cnt, Order: "published_at", Direction: "desc"})
 		if err != nil {
 			return miniflux.Entries{}, err
 		}

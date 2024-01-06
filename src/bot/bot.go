@@ -23,7 +23,6 @@ type Bot struct {
 	TGBotAPI         *tgbotapi.BotAPI
 	AnekdotAPI       *apiclient.AnecdoteAPI
 	ExchangeAPI      *apiclient.ExchangeAPI
-	KommersantAPI    *apiclient.KommersantAPI
 	OpenaiAPI        *apiclient.OpenaiAPI
 	WeatherAPI       *apiclient.WeatherAPI
 	MinifluxAPI      *apiclient.MinifluxAPI
@@ -116,13 +115,13 @@ func (b *Bot) mourningJob() {
 		}
 
 		// call news api
-		news, err := b.MinifluxAPI.GetLatestNews()
+		news, err := b.MinifluxAPI.GetLatestNews(3)
 		if (err != nil) || (len(news) == 0) {
 			slog.Error("error calling news api", "err", err)
 		} else {
-			fmt_news := "\nПоследние новости:\n"
+			fmt_news := fmt.Sprintf("\nПоследние новости c сайта %s:\n", b.MinifluxAPI.SiteURL)
 			for i, n := range news {
-				translatedTitle, err := b.DeeplAPI.CallDeeplAPI(n.Title)
+				translatedTitle, err := b.DeeplAPI.CallDeeplAPI([]string{n.Title})
 				if err != nil {
 					slog.Error("error calling deepl api", "err", err)
 					translatedTitle = n.Title

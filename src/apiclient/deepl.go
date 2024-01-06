@@ -17,7 +17,7 @@ type DeeplAPI struct {
 }
 
 type TranslationIn struct {
-	Text       string `json:"text"`
+	Text       []string `json:"text"`
 	TargetLang string `json:"target_lang"`
 }
 type TranslationOut struct {
@@ -28,7 +28,7 @@ type Translation struct {
 	Text       string `json:"text"`
 }
 
-func (a *DeeplAPI) CallDeeplAPI(text string) (string, error) {
+func (a *DeeplAPI) CallDeeplAPI(text []string) (string, error) {
 	const maxRetry = 3
 
 	body, err := json.Marshal(TranslationIn{Text: text, TargetLang: "RU"})
