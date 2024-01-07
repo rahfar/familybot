@@ -7,14 +7,23 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"strings"
+	"os"
 	"time"
 )
 
 type WeatherAPI struct {
 	ApiKey     string
-	Cities     string
+	Config     WeatherAPIConfig
 	HttpClient *http.Client
+}
+
+type WeatherAPIConfig struct {
+	Cities map[string]CityPosition `json:"cities"`
+}
+
+type CityPosition struct {
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
 }
 
 type Weather struct {
@@ -38,24 +47,68 @@ type Weather struct {
 	} `json:"forecast"`
 }
 
+func readConfigFile(configFilePath string) (WeatherAPIConfig, error) {
+	var config WeatherAPIConfig
+
+	configFile, err := os.Open(configFilePath)
+
+	if err != nil {
+		slog.Warn("Error opening config file", "err", err)
+		return config, err
+	}
+
+	defer configFile.Close()
+
+	configFileBytes, err := io.ReadAll(configFile)
+
+	if err != nil {
+		slog.Warn("Error reading config file", "err", err)
+		return config, err
+	}
+
+	err = json.Unmarshal(configFileBytes, &config)
+
+	if err != nil {
+		slog.Warn("Error parsing config file", "err", err)
+		return config, err
+	}
+
+	return config, nil
+}
+
+func NewWeatherAPI(apiKey string, configFile string, httpClient *http.Client) *WeatherAPI {
+	cfg, err := readConfigFile(configFile)
+
+	if err != nil {
+		slog.Warn("Error reading config file", "err", err)
+	}
+
+	return &WeatherAPI{
+		ApiKey:     apiKey,
+		Config:     cfg,
+		HttpClient: httpClient,
+	}
+}
+
 func (w *WeatherAPI) GetWeather() []Weather {
 	weather := make([]Weather, 0)
-	cities := strings.Split(w.Cities, ",")
-	for _, city := range cities {
-		w, err := w.callCurrentAPI(city)
+
+	for c, cp := range w.Config.Cities {
+		w, err := w.callCurrentAPI(fmt.Sprintf("%f,%f", cp.Lat, cp.Lon))
 		if err != nil {
-			slog.Warn("could not get weather", "city", city, "err", err)
+			slog.Warn("could not get weather", "city", c, "err", err)
 		} else {
+			w.Location.Name = c
 			weather = append(weather, *w)
 		}
 	}
 	return weather
 }
 
-func (w *WeatherAPI) callCurrentAPI(city string) (*Weather, error) {
+func (w *WeatherAPI) callCurrentAPI(latlon string) (*Weather, error) {
 	const maxRetry = 3
 	baseURL := "https://api.weatherapi.com/v1/forecast.json"
-	queryStr := fmt.Sprintf("?key=%s&q=%s&lang=ru&days=1&aqi=no&alerts=no", w.ApiKey, url.QueryEscape(city))
+	queryStr := fmt.Sprintf("?key=%s&q=%s&lang=ru&days=1&aqi=no&alerts=no", w.ApiKey, url.QueryEscape(latlon))
 
 	for i := 1; i <= maxRetry; i++ {
 		resp, err := w.HttpClient.Get(baseURL + queryStr)

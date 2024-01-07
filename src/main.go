@@ -23,8 +23,8 @@ var opts struct {
 		AllowedUsernames string `long:"allowedusernames" env:"ALLOWEDUSERNAMES" description:"list of usernames that will have access to the bot" default:""`
 	} `group:"telegram" namespace:"telegram" env-namespace:"TELEGRAM"`
 	WeatherAPI struct {
-		Key    string `long:"key" env:"KEY"`
-		Cities string `long:"cities" env:"CITIES"`
+		Key        string `long:"key" env:"KEY"`
+		ConfigFile string `long:"configfile" env:"configfile" default:"weatherapi_config.json" description:"config file for weather api"`
 	} `group:"weatherapi" namespace:"weatherapi" env-namespace:"WEATHERAPI"`
 	CurrencyAPI struct {
 		Key string `long:"key" env:"KEY"`
@@ -71,9 +71,9 @@ func main() {
 	anekdotAPI := &apiclient.AnecdoteAPI{HttpClient: httpClient}
 	exchangeAPI := &apiclient.ExchangeAPI{ApiKey: opts.CurrencyAPI.Key, HttpClient: httpClient}
 	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: openaiHttpClient, GPTModel: opts.OpenaiAPI.GPTModel}
-	weatherAPI := &apiclient.WeatherAPI{ApiKey: opts.WeatherAPI.Key, Cities: opts.WeatherAPI.Cities, HttpClient: httpClient}
 	deeplAPI := &apiclient.DeeplAPI{HttpClient: httpClient, ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
 	minifluxAPI := &apiclient.MinifluxAPI{ApiKey: opts.MinifluxAPI.Key, BaseURL: opts.MinifluxAPI.BaseURL, SiteURL: opts.MinifluxAPI.SiteURL}
+	weatherAPI := apiclient.NewWeatherAPI(opts.WeatherAPI.Key, opts.WeatherAPI.ConfigFile, httpClient)
 
 	b := bot.Bot{
 		Token:            opts.Telegram.Token,

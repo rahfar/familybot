@@ -13,14 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build Docker Image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          tags: ghcr.io/${{ github.repository }}:latest
-          build-args: |
-            REVISION=${{ github.sha }} 
-
       - name: Get Secrets
         uses: bitwarden/sm-action@v1
         with:
@@ -35,7 +27,8 @@ jobs:
             645021f0-b0eb-41af-9aa9-b041013ff1a5 > OPENAIAPI_KEY
             457ec119-e932-4cbd-8ad2-b0ef00e47798 > MINIFLUXAPI_KEY
             0d11a328-87b9-4ade-837b-b0ef00e4baff > DEEPLAPI_KEY
+
       - name: Deploy
         run: |
           cd deployment
-          docker compose up -d
+          docker compose up -d --force-recreate --build
