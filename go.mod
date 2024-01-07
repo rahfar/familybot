@@ -7,11 +7,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/sashabaranov/go-openai v1.17.9
-	golang.org/x/net v0.19.0
 	miniflux.app v1.0.46
 )
 
-require (
-	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
-)
+require golang.org/x/sys v0.15.0 // indirect
