@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 
 	"github.com/rahfar/familybot/src/apiclient"
+	"github.com/rahfar/familybot/src/metrics"
 )
 
 type Bot struct {
@@ -51,6 +52,8 @@ func (b *Bot) Run() {
 }
 
 func (b *Bot) onMessage(msg tgbotapi.Message) {
+	metrics.RecvMsgCounter.Inc()
+
 	words := strings.Split(msg.Text, " ")
 	cmd := findCommand(b.Commands, words[0])
 	if cmd != nil {
@@ -71,6 +74,7 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 }
 
 func (b *Bot) mourningJob() {
+	metrics.MourningJobCounter.Inc()
 	slog.Info("starting mourning job")
 	for {
 		text := "Доброе утро! 🌅\n"
@@ -180,6 +184,7 @@ func (b *Bot) sendMessage(msg tgbotapi.MessageConfig) {
 		for i := 1; i <= maxRetry; i++ {
 			_, err := b.TGBotAPI.Send(msg)
 			if err == nil {
+				metrics.SentMsgCounter.Inc()
 				break
 			}
 

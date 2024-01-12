@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/jessevdk/go-flags"
 
+	"github.com/rahfar/familybot/src/api"
 	"github.com/rahfar/familybot/src/apiclient"
 	"github.com/rahfar/familybot/src/bot"
 )
@@ -54,6 +55,8 @@ func main() {
 		slog.Error("Error parsing options")
 		panic(err)
 	}
+
+	go api.StartServer()
 
 	bot_api, err := tgbotapi.NewBotAPI(opts.Telegram.Token)
 	if err != nil {
