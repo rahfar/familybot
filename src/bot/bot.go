@@ -3,12 +3,14 @@ package bot
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/rahfar/familybot/src/apiclient"
 	"github.com/rahfar/familybot/src/metrics"
@@ -17,6 +19,8 @@ import (
 type Bot struct {
 	Token            string
 	Dbg              bool
+	Host             string
+	Port             string
 	AllowedUsernames []string
 	GroupID          int64
 	Commands         []Command
@@ -31,6 +35,7 @@ type Bot struct {
 }
 
 func (b *Bot) Run() {
+	go b.startWebAPI()
 	go b.mourningJob()
 
 	update_cfg := tgbotapi.NewUpdate(0)
@@ -43,6 +48,8 @@ func (b *Bot) Run() {
 			continue
 		}
 
+		metrics.RecvMsgCounter.Inc()
+
 		if !b.isMessageFromAllowedChat(update) {
 			slog.Info("skip message from unsupported chat", "chat", *update.Message.Chat)
 			continue
@@ -52,8 +59,6 @@ func (b *Bot) Run() {
 }
 
 func (b *Bot) onMessage(msg tgbotapi.Message) {
-	metrics.RecvMsgCounter.Inc()
-
 	words := strings.Split(msg.Text, " ")
 	cmd := findCommand(b.Commands, words[0])
 	if cmd != nil {
@@ -232,4 +237,15 @@ func waitUntilMourning() {
 	}
 	slog.Info("waiting until mourning", "time-to-wait", desiredTime.Sub(t).String())
 	time.Sleep(desiredTime.Sub(t))
+}
+
+func pingHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("pong"))
+}
+
+func (b *Bot) startWebAPI() {
+	http.HandleFunc("/ping", pingHandler)
+	http.Handle("/metrics", promhttp.Handler())
+	err := http.ListenAndServe(b.Host+":"+b.Port, nil)
+	panic(err)
 }

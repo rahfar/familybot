@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/jessevdk/go-flags"
 
-	"github.com/rahfar/familybot/src/api"
 	"github.com/rahfar/familybot/src/apiclient"
 	"github.com/rahfar/familybot/src/bot"
 )
@@ -43,7 +42,9 @@ var opts struct {
 		Key     string `long:"key" env:"KEY"`
 		BaseURL string `long:"baseurl" env:"BASEURL" default:"https://api-free.deepl.com"`
 	} `group:"deeplapi" namespace:"deeplapi" env-namespace:"DEEPLAPI"`
-	Dbg bool `long:"debug" env:"DEBUG" description:"debug mode"`
+	Host string `long:"host" env:"HOST" default:"0.0.0.0"`
+	Port string `long:"port" env:"PORT" default:"8080"`
+	Dbg  bool   `long:"debug" env:"DEBUG" description:"debug mode"`
 }
 
 func main() {
@@ -55,8 +56,6 @@ func main() {
 		slog.Error("Error parsing options")
 		panic(err)
 	}
-
-	go api.StartServer()
 
 	bot_api, err := tgbotapi.NewBotAPI(opts.Telegram.Token)
 	if err != nil {
@@ -81,6 +80,8 @@ func main() {
 	b := bot.Bot{
 		Token:            opts.Telegram.Token,
 		Dbg:              opts.Dbg,
+		Host:             opts.Host,
+		Port:             opts.Port,
 		AllowedUsernames: strings.Split(opts.Telegram.AllowedUsernames, ","),
 		GroupID:          opts.Telegram.GroupID,
 		Commands:         bot.Commands,
