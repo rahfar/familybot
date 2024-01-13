@@ -31,4 +31,5 @@ jobs:
       - name: Deploy
         run: |
           cd deployment
-          docker compose up -d --force-recreate --build
+          docker compose build --build-arg REVISION=$GITHUB_SHA
+          docker compose up -d --force-recreate
