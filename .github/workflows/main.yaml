@@ -34,7 +34,7 @@ jobs:
 
       - name: Deploy
         env:
-          DEBUG: ${{ inputs.debug }}
+          DEBUG: ${{ github.event_name == 'push' && 'false' || github.event.inputs.debug }}
         run: |
           cd deployment
           docker compose build --build-arg REVISION=$GITHUB_SHA
