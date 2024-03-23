@@ -59,4 +59,9 @@ var Commands = []Command{
 		Description: "Версия бота.",
 		Handler:     getRevision,
 	},
+	{
+		Names:       []string{"!англ", "!eng"},
+		Description: "Проверить и поправить грамматику в английском тексте.",
+		Handler:     correctEnglish,
+	},
 }

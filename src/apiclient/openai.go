@@ -59,6 +59,41 @@ func (o *OpenaiAPI) CallGPT(question string, responseHistory []GPTResponse) (str
 	return "", fmt.Errorf("max retries reached")
 }
 
+func (o *OpenaiAPI) CallGPTforEng(text string) (string, error) {
+	const maxRetry = 3
+
+	gptcontext := "Act as an expert in English language arts with advanced experience in proofreading, editing, spelling, grammar, proper sentence structure, and punctuation. You have critical thinking skills with the ability to analyze and evaluate information, arguments, and ideas, and to make logical and well-supported judgments and decisions. You will be provided content from a professional business to proofread in the form of emails, texts, and instant messages to make sure they are error-free before sending. Your approach would be to carefully read through each communication to identify any errors, inconsistencies, or areas where clarity could be improved. Your overall goal is to ensure communications are error-free, clear, and effective in achieving their intended purpose. You will make appropriate updates to increase readability, professionalism, and cohesiveness, while also ensuring that your intended meaning is conveyed accurately. Only reply to the correction, and the improvements, and nothing else, do not write explanations."
+
+	if len(text) > maxPromptSymbolSize {
+		return "Слишком длинный вопрос, попробуйте покороче", nil
+	}
+
+	messages := make([]openai.ChatCompletionMessage, 0)
+	messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleSystem, Content: gptcontext})
+	messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: "Fix English: " + text})
+
+	for i := 1; i <= maxRetry; i++ {
+		client := openai.NewClient(o.ApiKey)
+		resp, err := client.CreateChatCompletion(
+			context.Background(),
+			openai.ChatCompletionRequest{
+				Model:    o.GPTModel,
+				Messages: messages,
+			},
+		)
+		if err == nil {
+			return resp.Choices[0].Message.Content, nil
+		}
+		if APIError, ok := err.(*openai.APIError); ok && i < maxRetry {
+			slog.Info("got error response from api, retrying in 5 seconds...", "retry-cnt", i, "status", APIError.HTTPStatusCode)
+			time.Sleep(5 * time.Second)
+		} else {
+			return "", err
+		}
+	}
+	return "", fmt.Errorf("max retries reached")
+}
+
 func (o *OpenaiAPI) CallWhisper(filePath string) (string, error) {
 	const maxRetry = 3
 

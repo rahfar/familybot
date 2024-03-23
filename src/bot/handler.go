@@ -226,3 +226,22 @@ func getRevision(b *Bot, msg *tgbotapi.Message) {
 	msgConfig.ReplyToMessageID = msg.MessageID
 	b.sendMessage(msgConfig)
 }
+
+func correctEnglish(b* Bot, msg *tgbotapi.Message) {
+	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "eng"}).Inc()
+	
+	text := removeFirstWord(msg.Text)
+
+	ans, err := b.OpenaiAPI.CallGPTforEng(text)
+	if err != nil || len(ans) == 0 {
+		slog.Error("error occured while call openai", "err", err)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, ans)
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
+}
