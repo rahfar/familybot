@@ -1,15 +1,6 @@
 name: build and deploy
 
-on:
-  workflow_dispatch:
-    inputs:
-      debug:
-        description: debug flg
-        type: boolean
-        default: false
-  push:
-    branches:
-      - master
+on: [push]
 
 jobs:
   build-and-deploy:
