@@ -2,7 +2,7 @@ name: familybot
 
 services:
   familybot:
-    build: '..'
+    build: '.'
     container_name: familybot
     ports:
       - '127.0.0.1:8080:8080'
@@ -21,10 +21,3 @@ services:
       - MINIFLUXAPI_SITEURL=https://www.nytimes.com
       - DEEPLAPI_KEY
     restart: unless-stopped
-    configs:
-      - source: weatherapi_config.json
-        target: /app/weatherapi_config.json
-
-configs:
-  weatherapi_config.json:
-    file: ./configs/weatherapi_config.json

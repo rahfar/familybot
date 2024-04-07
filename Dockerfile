@@ -13,5 +13,6 @@ ENV REVISION=${REVISION}
 WORKDIR /app
 RUN apk update && apk add tzdata
 COPY --from=build /build/main ./
+COPY configs/weatherapi_config.json /app/weatherapi_config.json
 
 ENTRYPOINT [ "/app/main" ]
