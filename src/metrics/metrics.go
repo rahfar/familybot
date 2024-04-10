@@ -23,7 +23,6 @@ var (
 		Help: "The total number of sent messages",
 	})
 )
-
 var (
 	CommandCallsCaounter = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "familybot_command_calls_total",
