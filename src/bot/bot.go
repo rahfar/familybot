@@ -26,7 +26,6 @@ type Bot struct {
 	Commands         []Command
 	AskGPTCache      *expirable.LRU[string, []apiclient.GPTResponse]
 	TGBotAPI         *tgbotapi.BotAPI
-	AnekdotAPI       *apiclient.AnecdoteAPI
 	ExchangeAPI      *apiclient.ExchangeAPI
 	OpenaiAPI        *apiclient.OpenaiAPI
 	WeatherAPI       *apiclient.WeatherAPI

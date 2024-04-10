@@ -90,21 +90,6 @@ func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.G
 	return filtered
 }
 
-func getAnecdote(b *Bot, msg *tgbotapi.Message) {
-	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "anecdote"}).Inc()
-	anecdote, err := b.AnekdotAPI.CallAnecdoteAPI()
-	if err != nil || len(anecdote) == 0 {
-		slog.Error("error calling anecdote api", "err", err)
-		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Не смог получить свежий анекдот :(")
-		msgConfig.ReplyToMessageID = msg.MessageID
-		b.sendMessage(msgConfig)
-		return
-	}
-	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, anecdote)
-	msgConfig.ReplyToMessageID = msg.MessageID
-	b.sendMessage(msgConfig)
-}
-
 func getLatestNews(b *Bot, msg *tgbotapi.Message) {
 	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "news"}).Inc()
 	news, err := b.MinifluxAPI.GetLatestNews(5)
@@ -227,9 +212,9 @@ func getRevision(b *Bot, msg *tgbotapi.Message) {
 	b.sendMessage(msgConfig)
 }
 
-func correctEnglish(b* Bot, msg *tgbotapi.Message) {
+func correctEnglish(b *Bot, msg *tgbotapi.Message) {
 	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "eng"}).Inc()
-	
+
 	text := removeFirstWord(msg.Text)
 
 	ans, err := b.OpenaiAPI.CallGPTforEng(text)

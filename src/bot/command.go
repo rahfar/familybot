@@ -40,11 +40,6 @@ var Commands = []Command{
 		Handler:     askChatGPT,
 	},
 	{
-		Names:       []string{"!анекдот", "!joke"},
-		Description: "Свежий анекдот (может быть даже смешной).",
-		Handler:     getAnecdote,
-	},
-	{
 		Names:       []string{"!новости", "!news"},
 		Description: "Последние новости с сайта Коммерсант.",
 		Handler:     getLatestNews,

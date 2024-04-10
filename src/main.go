@@ -70,7 +70,6 @@ func main() {
 	httpClient := &http.Client{Timeout: 15 * time.Second}
 	openaiHttpClient := &http.Client{Timeout: 60 * time.Second}
 
-	anekdotAPI := &apiclient.AnecdoteAPI{HttpClient: httpClient}
 	exchangeAPI := &apiclient.ExchangeAPI{ApiKey: opts.CurrencyAPI.Key, HttpClient: httpClient}
 	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: openaiHttpClient, GPTModel: opts.OpenaiAPI.GPTModel}
 	deeplAPI := &apiclient.DeeplAPI{HttpClient: httpClient, ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
@@ -86,7 +85,6 @@ func main() {
 		GroupID:          opts.Telegram.GroupID,
 		Commands:         bot.Commands,
 		AskGPTCache:      expirable.NewLRU[string, []apiclient.GPTResponse](1000, nil, time.Minute*30),
-		AnekdotAPI:       anekdotAPI,
 		ExchangeAPI:      exchangeAPI,
 		OpenaiAPI:        openaiAPI,
 		WeatherAPI:       weatherAPI,
