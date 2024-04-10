@@ -10,8 +10,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
       - name: Get Secrets
         uses: bitwarden/sm-action@v2
         with:
@@ -27,8 +25,15 @@ jobs:
             0d11a328-87b9-4ade-837b-b0ef00e4baff > DEEPLAPI_KEY
 
       - name: Deploy
-        env:
-          DEBUG: ${{ github.event_name == 'push' && 'false' || github.event.inputs.debug }}
-        run: |
-          docker compose build --build-arg REVISION=$GITHUB_SHA
-          docker compose up -d --force-recreate
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.TARGET_HOST }}
+          username: ${{ secrets.TARGET_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          envs: TELEGRAM_TOKEN,TELEGRAM_GROUP,TELEGRAM_ALLOWEDUSERNAMES,WEATHERAPI_KEY,CURRENCYAPI_KEY,OPENAIAPI_KEY,MINIFLUXAPI_KEY,DEEPLAPI_KEY
+          script: |
+            cd ~/familybot &&
+            git fetch --all &&
+            git reset --hard origin/master &&
+            docker compose build --build-arg REVISION=$(git rev-parse --short master) &&
+            docker compose up -d --force-recreate
