@@ -72,6 +72,13 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 		b.sendMessage(resp)
 	} else if msg.Voice != nil {
 		transcriptVoice(b, &msg)
+	} else if msg.Chat.IsPrivate() {
+		cmd = findCommand(b.Commands, "!gpt")
+		if cmd == nil {
+			slog.Error("could not find command !gpt")
+			return
+		}
+		cmd.Handler(b, &msg)
 	} else {
 		return
 	}

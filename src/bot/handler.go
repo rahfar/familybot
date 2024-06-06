@@ -83,11 +83,18 @@ func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.GPTResponse {
 	filtered := make([]apiclient.GPTResponse, 0)
 	for _, v := range responseHistory {
-		if v.Time.After(time.Now().Add(-5 * time.Minute)) {
+		if v.Time.After(time.Now().Add(-7 * 24 * time.Hour)) {
 			filtered = append(filtered, v)
 		}
 	}
 	return filtered
+}
+
+func newChatGPT(b *Bot, msg *tgbotapi.Message) {
+	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "new"}).Inc()
+	b.AskGPTCache.Remove(strconv.FormatInt(msg.Chat.ID, 10))
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Я всё забыл.. Давайте начнем сначала")
+	b.sendMessage(msgConfig)
 }
 
 func getLatestNews(b *Bot, msg *tgbotapi.Message) {

@@ -59,4 +59,9 @@ var Commands = []Command{
 		Description: "Проверить и поправить грамматику в английском тексте.",
 		Handler:     correctEnglish,
 	},
+	{
+		Names:       []string{"!новый", "!new"},
+		Description: "Сбросить контекст в работе с ChatGPT.",
+		Handler:     newChatGPT,
+	},
 }
