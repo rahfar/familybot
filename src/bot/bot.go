@@ -10,6 +10,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/rahfar/familybot/src/apiclient"
@@ -37,11 +38,15 @@ func (b *Bot) Run() {
 	go b.startWebAPI()
 	go b.mourningJob()
 
+	_, err := b.initCommands()
+	if err != nil {
+		slog.Error("couldn't init commnads", "err", err)
+		panic(err)
+	}
+
 	update_cfg := tgbotapi.NewUpdate(0)
 	update_cfg.Timeout = 60
-
 	updates := b.TGBotAPI.GetUpdatesChan(update_cfg)
-
 	for update := range updates {
 		if update.Message == nil || update.Message.Chat == nil {
 			continue
@@ -61,21 +66,14 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 	words := strings.Split(msg.Text, " ")
 	cmd := findCommand(b.Commands, words[0])
 	if cmd != nil {
+		metrics.CommandCallsCaounter.With(prometheus.Labels{"command": cmd.Name}).Inc()
 		cmd.Handler(b, &msg)
-	} else if strings.EqualFold(words[0], "!команды") {
-		help_text := "Доступные команды:\n"
-		for _, c := range b.Commands {
-			help_text += strings.Join(c.Names, ", ") + " - " + c.Description + "\n"
-		}
-		resp := tgbotapi.NewMessage(msg.Chat.ID, help_text)
-		resp.ReplyToMessageID = msg.MessageID
-		b.sendMessage(resp)
 	} else if msg.Voice != nil {
 		transcriptVoice(b, &msg)
 	} else if msg.Chat.IsPrivate() {
-		cmd = findCommand(b.Commands, "!gpt")
+		cmd = findCommand(b.Commands, "/gpt")
 		if cmd == nil {
-			slog.Error("could not find command !gpt")
+			slog.Error("could not find command /gpt")
 			return
 		}
 		cmd.Handler(b, &msg)
@@ -216,25 +214,6 @@ func (b *Bot) sendMessage(msg tgbotapi.MessageConfig) {
 	}
 }
 
-func (b *Bot) sendPhoto(msg tgbotapi.PhotoConfig) {
-	const maxRetry = 3
-
-	for i := 1; i <= maxRetry; i++ {
-		_, err := b.TGBotAPI.Send(msg)
-		if err == nil {
-			break
-		}
-
-		if i < maxRetry {
-			slog.Info("error sending photo, retrying in 5 seconds...", "err", err, "retry-cnt", i)
-			time.Sleep(5 * time.Second)
-		} else {
-			slog.Error("error sending photo", "err", err)
-			return
-		}
-	}
-}
-
 func waitUntilMourning() {
 	t := time.Now()
 	desiredTime := time.Date(t.Year(), t.Month(), t.Day(), 7, 0, 0, 0, t.Location())
@@ -254,4 +233,17 @@ func (b *Bot) startWebAPI() {
 	http.Handle("/metrics", promhttp.Handler())
 	err := http.ListenAndServe(b.Host+":"+b.Port, nil)
 	panic(err)
+}
+
+func (b *Bot) initCommands() (*tgbotapi.APIResponse, error) {
+	tgCommands := make([]tgbotapi.BotCommand, 0, len(b.Commands))
+	for _, cmd := range b.Commands {
+		tgCommands = append(tgCommands, tgbotapi.BotCommand{
+			Command:     cmd.Name,
+			Description: cmd.Description,
+		})
+	}
+
+	cmdCfg := tgbotapi.NewSetMyCommands(tgCommands...)
+	return b.TGBotAPI.Request(cmdCfg)
 }

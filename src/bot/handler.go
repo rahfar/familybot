@@ -13,22 +13,18 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/prometheus/client_golang/prometheus"
 	openai "github.com/sashabaranov/go-openai"
 
 	"github.com/rahfar/familybot/src/apiclient"
-	"github.com/rahfar/familybot/src/metrics"
 )
 
 func ping(b *Bot, msg *tgbotapi.Message) {
-	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "ping"}).Inc()
 	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "понг")
 	msgConfig.ReplyToMessageID = msg.MessageID
 	b.sendMessage(msgConfig)
 }
 
 func getCurrentWeather(b *Bot, msg *tgbotapi.Message) {
-	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "weather"}).Inc()
 	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "")
 	weather := b.WeatherAPI.GetWeather()
 	sort.Slice(weather, func(i, j int) bool {
@@ -50,8 +46,6 @@ func getCurrentWeather(b *Bot, msg *tgbotapi.Message) {
 }
 
 func askChatGPT(b *Bot, msg *tgbotapi.Message) {
-	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "gpt"}).Inc()
-
 	question := removeFirstWord(msg.Text)
 
 	responseHistory, ok := b.AskGPTCache.Get(strconv.FormatInt(msg.Chat.ID, 10))
@@ -91,14 +85,12 @@ func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.G
 }
 
 func newChatGPT(b *Bot, msg *tgbotapi.Message) {
-	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "new"}).Inc()
 	b.AskGPTCache.Remove(strconv.FormatInt(msg.Chat.ID, 10))
 	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Я всё забыл.. Давайте начнем сначала")
 	b.sendMessage(msgConfig)
 }
 
 func getLatestNews(b *Bot, msg *tgbotapi.Message) {
-	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "news"}).Inc()
 	news, err := b.MinifluxAPI.GetLatestNews(5)
 	if (err != nil) || (len(news) == 0) {
 		slog.Error("error calling news api", "err", err)
@@ -120,7 +112,6 @@ func getLatestNews(b *Bot, msg *tgbotapi.Message) {
 }
 
 func transcriptVoice(b *Bot, msg *tgbotapi.Message) {
-	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "transcript"}).Inc()
 	// Get direct link to audio message
 	link, err := b.TGBotAPI.GetFileDirectURL(msg.Voice.FileID)
 	if err != nil {
@@ -176,22 +167,6 @@ func transcriptVoice(b *Bot, msg *tgbotapi.Message) {
 	b.sendMessage(msgConfig)
 }
 
-func generateImage(b *Bot, msg *tgbotapi.Message) {
-	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "image"}).Inc()
-	prompt := removeFirstWord(msg.Text)
-	imgURL, err := b.OpenaiAPI.CallDalle(prompt)
-	if err != nil {
-		slog.Error("generating image", "err", err)
-		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при генерации картинки :(")
-		msgConfig.ReplyToMessageID = msg.MessageID
-		b.sendMessage(msgConfig)
-		return
-	}
-	photoConfig := tgbotapi.NewPhoto(msg.Chat.ID, tgbotapi.FileURL(imgURL))
-	photoConfig.ReplyToMessageID = msg.MessageID
-	b.sendPhoto(photoConfig)
-}
-
 func removeFirstWord(input string) string {
 	// Find the index of the first space
 	firstSpaceIndex := strings.Index(input, " ")
@@ -209,7 +184,6 @@ func removeFirstWord(input string) string {
 }
 
 func getRevision(b *Bot, msg *tgbotapi.Message) {
-	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "revision"}).Inc()
 	rev := os.Getenv("REVISION")
 	if len(rev) == 0 {
 		return
@@ -220,8 +194,6 @@ func getRevision(b *Bot, msg *tgbotapi.Message) {
 }
 
 func correctEnglish(b *Bot, msg *tgbotapi.Message) {
-	metrics.CommandCallsCaounter.With(prometheus.Labels{"command": "eng"}).Inc()
-
 	text := removeFirstWord(msg.Text)
 
 	ans, err := b.OpenaiAPI.CallGPTforEng(text)
