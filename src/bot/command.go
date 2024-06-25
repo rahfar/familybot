@@ -1,8 +1,6 @@
 package bot
 
 import (
-	"strings"
-
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -12,49 +10,45 @@ type Command struct {
 	Handler     func(*Bot, *tgbotapi.Message)
 }
 
-func findCommand(commands []Command, name string) *Command {
-	for i, cmd := range commands {
-		if strings.EqualFold(cmd.Name, name) {
-			return &commands[i]
-		}
-	}
-	return nil
-}
-
-var Commands = []Command{
-	{
+var Commands = map[string]Command{
+	"/ping": {
 		Name:        "/ping",
 		Description: "Провекра связи.",
 		Handler:     ping,
 	},
-	{
+	"/weather": {
 		Name:        "/weather",
 		Description: "Прогноз погоды в заданных городах.",
 		Handler:     getCurrentWeather,
 	},
-	{
+	"/gpt": {
 		Name:        "/gpt",
 		Description: "Спросить ChatGPT.",
 		Handler:     askChatGPT,
 	},
-	{
+	"/news": {
 		Name:        "/news",
 		Description: "Последние новости с сайта Коммерсант.",
 		Handler:     getLatestNews,
 	},
-	{
+	"/revision": {
 		Name:        "/revision",
 		Description: "Версия бота.",
 		Handler:     getRevision,
 	},
-	{
+	"/eng": {
 		Name:        "/eng",
 		Description: "Проверить и поправить грамматику в английском тексте.",
 		Handler:     correctEnglish,
 	},
-	{
+	"/new": {
 		Name:        "/new",
 		Description: "Сбросить контекст в работе с ChatGPT.",
 		Handler:     newChatGPT,
+	},
+	"/whoami": {
+		Name:        "/whoami",
+		Description: "Возвращает chat_id и user_id",
+		Handler:     whoAmI,
 	},
 }

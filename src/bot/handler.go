@@ -209,3 +209,13 @@ func correctEnglish(b *Bot, msg *tgbotapi.Message) {
 	msgConfig.ReplyToMessageID = msg.MessageID
 	b.sendMessage(msgConfig)
 }
+
+func whoAmI(b *Bot, msg *tgbotapi.Message) {
+	if !msg.Chat.IsPrivate() && !msg.Chat.IsGroup() {
+		return
+	}
+	chatId := msg.Chat.ID
+	userId := msg.From.ID
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("ChatID: %d\nUserID: %d", chatId, userId))
+	b.sendMessage(msgConfig)
+}

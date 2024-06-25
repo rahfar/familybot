@@ -24,7 +24,7 @@ type Bot struct {
 	Port             string
 	AllowedUsernames []string
 	GroupID          int64
-	Commands         []Command
+	Commands         map[string]Command
 	AskGPTCache      *expirable.LRU[string, []apiclient.GPTResponse]
 	TGBotAPI         *tgbotapi.BotAPI
 	ExchangeAPI      *apiclient.ExchangeAPI
@@ -63,16 +63,16 @@ func (b *Bot) Run() {
 }
 
 func (b *Bot) onMessage(msg tgbotapi.Message) {
-	words := strings.Split(msg.Text, " ")
-	cmd := findCommand(b.Commands, words[0])
-	if cmd != nil {
+	cmd, exists := b.Commands[msg.Command()]
+
+	if exists {
 		metrics.CommandCallsCaounter.With(prometheus.Labels{"command": cmd.Name}).Inc()
 		cmd.Handler(b, &msg)
 	} else if msg.Voice != nil {
 		transcriptVoice(b, &msg)
 	} else if msg.Chat.IsPrivate() {
-		cmd = findCommand(b.Commands, "/gpt")
-		if cmd == nil {
+		cmd, exists = b.Commands["/gpt"]
+		if !exists {
 			slog.Error("could not find command /gpt")
 			return
 		}
