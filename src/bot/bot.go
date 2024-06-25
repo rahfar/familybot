@@ -63,7 +63,7 @@ func (b *Bot) Run() {
 }
 
 func (b *Bot) onMessage(msg tgbotapi.Message) {
-	cmd, exists := b.Commands[msg.Command()]
+	cmd, exists := b.Commands["/" + msg.Command()]
 
 	if exists {
 		metrics.CommandCallsCaounter.With(prometheus.Labels{"command": cmd.Name}).Inc()

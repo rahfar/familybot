@@ -9,7 +9,6 @@ import (
 	"path"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -46,7 +45,7 @@ func getCurrentWeather(b *Bot, msg *tgbotapi.Message) {
 }
 
 func askChatGPT(b *Bot, msg *tgbotapi.Message) {
-	question := removeFirstWord(msg.Text)
+	question := msg.CommandArguments()
 
 	responseHistory, ok := b.AskGPTCache.Get(strconv.FormatInt(msg.Chat.ID, 10))
 	if !ok {
@@ -167,22 +166,6 @@ func transcriptVoice(b *Bot, msg *tgbotapi.Message) {
 	b.sendMessage(msgConfig)
 }
 
-func removeFirstWord(input string) string {
-	// Find the index of the first space
-	firstSpaceIndex := strings.Index(input, " ")
-
-	// If no space is found, return the original string
-	if firstSpaceIndex == -1 {
-		return input
-	}
-
-	// Extract the substring after the first space
-	// (adding 1 to exclude the space itself)
-	result := input[firstSpaceIndex+1:]
-
-	return result
-}
-
 func getRevision(b *Bot, msg *tgbotapi.Message) {
 	rev := os.Getenv("REVISION")
 	if len(rev) == 0 {
@@ -194,9 +177,7 @@ func getRevision(b *Bot, msg *tgbotapi.Message) {
 }
 
 func correctEnglish(b *Bot, msg *tgbotapi.Message) {
-	text := removeFirstWord(msg.Text)
-
-	ans, err := b.OpenaiAPI.CallGPTforEng(text)
+	ans, err := b.OpenaiAPI.CallGPTforEng(msg.CommandArguments())
 	if err != nil || len(ans) == 0 {
 		slog.Error("error occured while call openai", "err", err)
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
