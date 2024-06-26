@@ -45,7 +45,12 @@ func getCurrentWeather(b *Bot, msg *tgbotapi.Message) {
 }
 
 func askChatGPT(b *Bot, msg *tgbotapi.Message) {
-	question := msg.CommandArguments()
+	var question string
+	if msg.IsCommand() {
+		question = msg.CommandArguments()
+	} else {
+		question = msg.Text
+	}
 
 	responseHistory, ok := b.AskGPTCache.Get(strconv.FormatInt(msg.Chat.ID, 10))
 	if !ok {
