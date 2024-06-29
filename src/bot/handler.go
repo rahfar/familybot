@@ -94,27 +94,6 @@ func newChatGPT(b *Bot, msg *tgbotapi.Message) {
 	b.sendMessage(msgConfig)
 }
 
-func getLatestNews(b *Bot, msg *tgbotapi.Message) {
-	news, err := b.MinifluxAPI.GetLatestNews(5)
-	if (err != nil) || (len(news) == 0) {
-		slog.Error("error calling news api", "err", err)
-		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Не смог получить последние новости :(")
-		msgConfig.ReplyToMessageID = msg.MessageID
-		b.sendMessage(msgConfig)
-		return
-	}
-	fmt_news := fmt.Sprintf("\nПоследние новости c сайта %s:\n", b.MinifluxAPI.SiteURL)
-	for i, n := range news {
-		fmt_news += fmt.Sprintf("%d. [%s](%s)\n", i+1, n.Title, n.URL)
-	}
-
-	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, fmt_news)
-	msgConfig.ParseMode = tgbotapi.ModeMarkdown
-	msgConfig.DisableWebPagePreview = true
-	msgConfig.ReplyToMessageID = msg.MessageID
-	b.sendMessage(msgConfig)
-}
-
 func transcriptVoice(b *Bot, msg *tgbotapi.Message) {
 	// Get direct link to audio message
 	link, err := b.TGBotAPI.GetFileDirectURL(msg.Voice.FileID)

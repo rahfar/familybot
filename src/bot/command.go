@@ -26,11 +26,6 @@ var Commands = map[string]Command{
 		Description: "Спросить ChatGPT.",
 		Handler:     askChatGPT,
 	},
-	"/news": {
-		Name:        "/news",
-		Description: "Последние новости с сайта Коммерсант.",
-		Handler:     getLatestNews,
-	},
 	"/revision": {
 		Name:        "/revision",
 		Description: "Версия бота.",
