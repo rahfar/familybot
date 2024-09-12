@@ -81,7 +81,7 @@ func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.GPTResponse {
 	filtered := make([]apiclient.GPTResponse, 0)
 	for _, v := range responseHistory {
-		if v.Time.After(time.Now().Add(-7 * 24 * time.Hour)) {
+		if v.Time.After(time.Now().Add(4 * time.Hour)) {
 			filtered = append(filtered, v)
 		}
 	}
