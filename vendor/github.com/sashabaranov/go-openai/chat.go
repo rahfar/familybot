@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-
-	"github.com/sashabaranov/go-openai/jsonschema"
 )
 
 // Chat message role defined by the OpenAI API.
@@ -84,6 +82,7 @@ type ChatMessagePart struct {
 type ChatCompletionMessage struct {
 	Role         string `json:"role"`
 	Content      string `json:"content"`
+	Refusal      string `json:"refusal,omitempty"`
 	MultiContent []ChatMessagePart
 
 	// This property isn't in the official documentation, but it's in
@@ -109,6 +108,7 @@ func (m ChatCompletionMessage) MarshalJSON() ([]byte, error) {
 		msg := struct {
 			Role         string            `json:"role"`
 			Content      string            `json:"-"`
+			Refusal      string            `json:"refusal,omitempty"`
 			MultiContent []ChatMessagePart `json:"content,omitempty"`
 			Name         string            `json:"name,omitempty"`
 			FunctionCall *FunctionCall     `json:"function_call,omitempty"`
@@ -117,9 +117,11 @@ func (m ChatCompletionMessage) MarshalJSON() ([]byte, error) {
 		}(m)
 		return json.Marshal(msg)
 	}
+
 	msg := struct {
 		Role         string            `json:"role"`
 		Content      string            `json:"content"`
+		Refusal      string            `json:"refusal,omitempty"`
 		MultiContent []ChatMessagePart `json:"-"`
 		Name         string            `json:"name,omitempty"`
 		FunctionCall *FunctionCall     `json:"function_call,omitempty"`
@@ -133,12 +135,14 @@ func (m *ChatCompletionMessage) UnmarshalJSON(bs []byte) error {
 	msg := struct {
 		Role         string `json:"role"`
 		Content      string `json:"content"`
+		Refusal      string `json:"refusal,omitempty"`
 		MultiContent []ChatMessagePart
 		Name         string        `json:"name,omitempty"`
 		FunctionCall *FunctionCall `json:"function_call,omitempty"`
 		ToolCalls    []ToolCall    `json:"tool_calls,omitempty"`
 		ToolCallID   string        `json:"tool_call_id,omitempty"`
 	}{}
+
 	if err := json.Unmarshal(bs, &msg); err == nil {
 		*m = ChatCompletionMessage(msg)
 		return nil
@@ -146,6 +150,7 @@ func (m *ChatCompletionMessage) UnmarshalJSON(bs []byte) error {
 	multiMsg := struct {
 		Role         string `json:"role"`
 		Content      string
+		Refusal      string            `json:"refusal,omitempty"`
 		MultiContent []ChatMessagePart `json:"content"`
 		Name         string            `json:"name,omitempty"`
 		FunctionCall *FunctionCall     `json:"function_call,omitempty"`
@@ -187,10 +192,10 @@ type ChatCompletionResponseFormat struct {
 }
 
 type ChatCompletionResponseFormatJSONSchema struct {
-	Name        string                `json:"name"`
-	Description string                `json:"description,omitempty"`
-	Schema      jsonschema.Definition `json:"schema"`
-	Strict      bool                  `json:"strict"`
+	Name        string         `json:"name"`
+	Description string         `json:"description,omitempty"`
+	Schema      json.Marshaler `json:"schema"`
+	Strict      bool           `json:"strict"`
 }
 
 // ChatCompletionRequest represents a request structure for chat completion API.
@@ -264,6 +269,7 @@ type ToolFunction struct {
 type FunctionDefinition struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
+	Strict      bool   `json:"strict,omitempty"`
 	// Parameters is an object describing the function.
 	// You can pass json.RawMessage to describe the schema,
 	// or you can pass in a struct which serializes to the proper JSON schema.
@@ -358,7 +364,12 @@ func (c *Client) CreateChatCompletion(
 		return
 	}
 
-	req, err := c.newRequest(ctx, http.MethodPost, c.fullURL(urlSuffix, request.Model), withBody(request))
+	req, err := c.newRequest(
+		ctx,
+		http.MethodPost,
+		c.fullURL(urlSuffix, withModel(request.Model)),
+		withBody(request),
+	)
 	if err != nil {
 		return
 	}
