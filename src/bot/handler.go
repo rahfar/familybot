@@ -81,7 +81,7 @@ func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.GPTResponse {
 	filtered := make([]apiclient.GPTResponse, 0)
 	for _, v := range responseHistory {
-		if v.Time.After(time.Now().Add(4 * time.Hour)) {
+		if v.Time.After(time.Now().Add(-4 * time.Hour)) {
 			filtered = append(filtered, v)
 		}
 	}
@@ -90,7 +90,7 @@ func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.G
 
 func newChatGPT(b *Bot, msg *tgbotapi.Message) {
 	b.AskGPTCache.Remove(strconv.FormatInt(msg.Chat.ID, 10))
-	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Я всё забыл.. Давайте начнем сначала")
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Контекст вызова GPT удален")
 	b.sendMessage(msgConfig)
 }
 
