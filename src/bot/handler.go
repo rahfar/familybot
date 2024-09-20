@@ -184,3 +184,10 @@ func whoAmI(b *Bot, msg *tgbotapi.Message) {
 	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("ChatID: %d\nUserID: %d", chatId, userId))
 	b.sendMessage(msgConfig)
 }
+
+func mourningDebug(b *Bot, msg *tgbotapi.Message) {
+	text := b.mourningDigest()
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, text)
+	b.sendMessage(msgConfig)
+}
+

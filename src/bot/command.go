@@ -46,4 +46,9 @@ var Commands = map[string]Command{
 		Description: "Возвращает chat_id и user_id",
 		Handler:     whoAmI,
 	},
+	"/mourning": {
+		Name:        "/mourning",
+		Description: "Debug mourning job",
+		Handler:     mourningDebug,
+	},
 }

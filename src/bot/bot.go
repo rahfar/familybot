@@ -82,68 +82,72 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 	}
 }
 
+func (b *Bot) mourningDigest() string {
+	text := "Доброе утро! 🌅\n"
+
+	// call currency api
+	xr_today, err1 := b.ExchangeAPI.GetExchangeRates()
+	xr_yesterday, err2 := b.ExchangeAPI.GetHistoryExchangeRates(time.Now().UTC().Add(-48 * time.Hour))
+	switch {
+	case err1 != nil:
+		slog.Error("could not get currency exchange rates", "err", err1)
+	case err2 != nil:
+		slog.Error("could not get currency history exchange rates", "err", err2)
+	default:
+		USDRUB_today := xr_today.Data.RUB.Value
+		EURRUB_today := xr_today.Data.RUB.Value / xr_today.Data.EUR.Value
+		BTCUSD_today := 1.0 / xr_today.Data.BTC.Value
+		USDRUB_yesterday := xr_yesterday.Data.RUB.Value
+		EURRUB_yesterday := xr_yesterday.Data.RUB.Value / xr_yesterday.Data.EUR.Value
+		BTCUSD_yesterday := 1.0 / xr_yesterday.Data.BTC.Value
+
+		text += fmt.Sprintf("\n__Курсы валют:__\nUSD %.2f₽ (%+.2f%%) \nEUR %.2f₽ (%+.2f%%)\nBTC %.2f$ (%+.2f%%)\n",
+			USDRUB_today,
+			(USDRUB_today/USDRUB_yesterday-1)*100,
+			EURRUB_today,
+			(EURRUB_today/EURRUB_yesterday-1)*100,
+			BTCUSD_today,
+			(BTCUSD_today/BTCUSD_yesterday-1)*100,
+		)
+	}
+
+	// call weather api
+	weather := b.WeatherAPI.GetWeather()
+	sort.Slice(weather, func(i, j int) bool {
+		return weather[i].Current.Temp < weather[j].Current.Temp
+	})
+	if len(weather) > 0 {
+		text += "\n__Прогноз погоды:__\n"
+		for _, w := range weather {
+			text += fmt.Sprintf("%s: %+g°C (max: %+g°C, min: %+g°C), %s \n", w.Location.Name, w.Current.Temp, w.Forecast.Forecastday[0].Day.Maxtemp_c, w.Forecast.Forecastday[0].Day.Mintemp_c, w.Current.Condition.Text)
+		}
+	}
+
+	// call news api
+	news, err := b.MinifluxAPI.GetLatestNews(3)
+	if (err != nil) || (len(news) == 0) {
+		slog.Error("error calling news api", "err", err)
+	} else {
+		fmt_news := fmt.Sprintf("\n__Последние новости c сайта %s:__\n", b.MinifluxAPI.SiteURL)
+		for i, n := range news {
+			translatedTitle, err := b.DeeplAPI.CallDeeplAPI([]string{n.Title})
+			if err != nil {
+				slog.Error("error calling deepl api", "err", err)
+				translatedTitle = n.Title
+			}
+			fmt_news += fmt.Sprintf("%d. [%s](%s)\n", i+1, translatedTitle, n.URL)
+		}
+		text += fmt_news
+	}
+	return text
+}
+
 func (b *Bot) mourningJob() {
 	metrics.MourningJobCounter.Inc()
 	slog.Info("starting mourning job")
 	for {
-		text := "Доброе утро! 🌅\n"
 		waitUntilMourning()
-
-		// call currency api
-		xr_today, err1 := b.ExchangeAPI.GetExchangeRates()
-		xr_yesterday, err2 := b.ExchangeAPI.GetHistoryExchangeRates(time.Now().UTC().Add(-48 * time.Hour))
-		switch {
-		case err1 != nil:
-			slog.Error("could not get currency exchange rates", "err", err1)
-		case err2 != nil:
-			slog.Error("could not get currency history exchange rates", "err", err2)
-		default:
-			USDRUB_today := xr_today.Data.RUB.Value
-			EURRUB_today := xr_today.Data.RUB.Value / xr_today.Data.EUR.Value
-			BTCUSD_today := 1.0 / xr_today.Data.BTC.Value
-			USDRUB_yesterday := xr_yesterday.Data.RUB.Value
-			EURRUB_yesterday := xr_yesterday.Data.RUB.Value / xr_yesterday.Data.EUR.Value
-			BTCUSD_yesterday := 1.0 / xr_yesterday.Data.BTC.Value
-
-			text += fmt.Sprintf("\n__Курсы валют:__\nUSD %.2f₽ (%+.2f%%) \nEUR %.2f₽ (%+.2f%%)\nBTC %.2f$ (%+.2f%%)\n",
-				USDRUB_today,
-				(USDRUB_today/USDRUB_yesterday-1)*100,
-				EURRUB_today,
-				(EURRUB_today/EURRUB_yesterday-1)*100,
-				BTCUSD_today,
-				(BTCUSD_today/BTCUSD_yesterday-1)*100,
-			)
-		}
-
-		// call weather api
-		weather := b.WeatherAPI.GetWeather()
-		sort.Slice(weather, func(i, j int) bool {
-			return weather[i].Current.Temp < weather[j].Current.Temp
-		})
-		if len(weather) > 0 {
-			text += "\n__Прогноз погоды:__\n"
-			for _, w := range weather {
-				text += fmt.Sprintf("%s: %+g°C (max: %+g°C, min: %+g°C), %s \n", w.Location.Name, w.Current.Temp, w.Forecast.Forecastday[0].Day.Maxtemp_c, w.Forecast.Forecastday[0].Day.Mintemp_c, w.Current.Condition.Text)
-			}
-		}
-
-		// call news api
-		news, err := b.MinifluxAPI.GetLatestNews(3)
-		if (err != nil) || (len(news) == 0) {
-			slog.Error("error calling news api", "err", err)
-		} else {
-			fmt_news := fmt.Sprintf("\n__Последние новости c сайта %s:__\n", b.MinifluxAPI.SiteURL)
-			for i, n := range news {
-				translatedTitle, err := b.DeeplAPI.CallDeeplAPI([]string{n.Title})
-				if err != nil {
-					slog.Error("error calling deepl api", "err", err)
-					translatedTitle = n.Title
-				}
-				fmt_news += fmt.Sprintf("%d. [%s](%s)\n", i+1, translatedTitle, n.URL)
-			}
-			text += fmt_news
-		}
-
+		text := b.mourningDigest()
 		// send message to group
 		msg := tgbotapi.NewMessage(b.GroupID, text)
 		msg.ParseMode = tgbotapi.ModeMarkdown
