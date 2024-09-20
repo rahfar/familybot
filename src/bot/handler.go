@@ -188,6 +188,8 @@ func whoAmI(b *Bot, msg *tgbotapi.Message) {
 func mourningDebug(b *Bot, msg *tgbotapi.Message) {
 	text := b.mourningDigest()
 	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, text)
+	msgConfig.ParseMode = tgbotapi.ModeMarkdownV2
+	msgConfig.DisableWebPagePreview = true
 	b.sendMessage(msgConfig)
 }
 
