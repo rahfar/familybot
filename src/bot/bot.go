@@ -130,7 +130,7 @@ func (b *Bot) mourningDigest() string {
 			text += tgbotapi.EscapeText(
 				tgbotapi.ModeMarkdownV2,
 				fmt.Sprintf(
-					"  %d°C (max: %d°C, min: %d°C), %s\n  рассвет: %s\n  закат: %s\n",
+					"  %d°C (max: %d°C, min: %d°C), %s\n  восход: %s\n  закат: %s\n",
 					int(w.Main.Temp),
 					int(w.Main.TempMax),
 					int(w.Main.TempMin),
