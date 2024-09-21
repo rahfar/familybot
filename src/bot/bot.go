@@ -123,15 +123,20 @@ func (b *Bot) mourningDigest() string {
 	if len(weather) > 0 {
 		text += "\n_Прогноз погоды:_\n"
 		for _, w := range weather {
+			location := time.FixedZone("custom", w.Timezone)
+			sunriseTime := time.Unix(w.Sys.Sunrise, 0).In(location).Format("15:04")
+			sunsetTime := time.Unix(w.Sys.Sunset, 0).In(location).Format("15:04")
 			text += tgbotapi.EscapeText(
 				tgbotapi.ModeMarkdownV2,
 				fmt.Sprintf(
-					"%s: %d°C (max: %d°C, min: %d°C), %s \n",
+					"%s:\n  %d°C (max: %d°C, min: %d°C), %s\n  рассвет: %s\n  закат: %s",
 					w.Name,
 					int(w.Main.Temp),
 					int(w.Main.TempMax),
 					int(w.Main.TempMin),
 					w.Weather[0].Description,
+					sunriseTime,
+					sunsetTime,
 				),
 			)
 		}

@@ -31,7 +31,22 @@ func getCurrentWeather(b *Bot, msg *tgbotapi.Message) {
 	})
 	if len(weather) > 0 {
 		for _, w := range weather {
-			msgConfig.Text += fmt.Sprintf("%s: %+g°C (max: %+g°C, min: %+g°C), %s\n", w.Name, w.Main.Temp, w.Main.TempMax, w.Main.TempMin, w.Weather[0].Description)
+			location := time.FixedZone("custom", w.Timezone)
+			sunriseTime := time.Unix(w.Sys.Sunrise, 0).In(location).Format("15:04")
+			sunsetTime := time.Unix(w.Sys.Sunset, 0).In(location).Format("15:04")
+			msgConfig.Text += tgbotapi.EscapeText(
+				tgbotapi.ModeMarkdownV2,
+				fmt.Sprintf(
+					"%s:\n  %d°C (max: %d°C, min: %d°C), %s\n  рассвет: %s\n  закат: %s",
+					w.Name,
+					int(w.Main.Temp),
+					int(w.Main.TempMax),
+					int(w.Main.TempMin),
+					w.Weather[0].Description,
+					sunriseTime,
+					sunsetTime,
+				),
+			)
 		}
 		msgConfig.ReplyToMessageID = msg.MessageID
 		b.sendMessage(msgConfig)
@@ -192,4 +207,3 @@ func mourningDebug(b *Bot, msg *tgbotapi.Message) {
 	msgConfig.DisableWebPagePreview = true
 	b.sendMessage(msgConfig)
 }
-

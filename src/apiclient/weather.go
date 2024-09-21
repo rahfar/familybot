@@ -133,6 +133,7 @@ func (w *WeatherAPI) GetWeather() []WeatherResponse {
 		if err != nil {
 			slog.Warn("could not get weather", "city", c, "err", err)
 		} else {
+			w.Name = c
 			weather = append(weather, *w)
 		}
 	}
