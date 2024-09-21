@@ -27,11 +27,11 @@ func getCurrentWeather(b *Bot, msg *tgbotapi.Message) {
 	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "")
 	weather := b.WeatherAPI.GetWeather()
 	sort.Slice(weather, func(i, j int) bool {
-		return weather[i].Current.Temp < weather[j].Current.Temp
+		return weather[i].Main.Temp < weather[j].Main.Temp
 	})
 	if len(weather) > 0 {
 		for _, w := range weather {
-			msgConfig.Text += fmt.Sprintf("%s: %+g°C (max: %+g°C, min: %+g°C), %s\n", w.Location.Name, w.Current.Temp, w.Forecast.Forecastday[0].Day.Maxtemp_c, w.Forecast.Forecastday[0].Day.Mintemp_c, w.Current.Condition.Text)
+			msgConfig.Text += fmt.Sprintf("%s: %+g°C (max: %+g°C, min: %+g°C), %s\n", w.Name, w.Main.Temp, w.Main.TempMax, w.Main.TempMin, w.Weather[0].Description)
 		}
 		msgConfig.ReplyToMessageID = msg.MessageID
 		b.sendMessage(msgConfig)

@@ -6,7 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
 	"time"
 )
@@ -26,25 +25,61 @@ type CityPosition struct {
 	Lon float64 `json:"lon"`
 }
 
+type WeatherResponse struct {
+	Coord      Coord     `json:"coord"`
+	Weather    []Weather `json:"weather"`
+	Base       string    `json:"base"`
+	Main       Main      `json:"main"`
+	Visibility int       `json:"visibility"`
+	Wind       Wind      `json:"wind"`
+	Clouds     Clouds    `json:"clouds"`
+	Dt         int64     `json:"dt"`
+	Sys        Sys       `json:"sys"`
+	Timezone   int       `json:"timezone"`
+	ID         int       `json:"id"`
+	Name       string    `json:"name"`
+	Cod        int       `json:"cod"`
+}
+
+type Coord struct {
+	Lon float64 `json:"lon"`
+	Lat float64 `json:"lat"`
+}
+
 type Weather struct {
-	Location struct {
-		Name string `json:"name"`
-	} `json:"location"`
-	Current struct {
-		Temp      float64 `json:"temp_c"`
-		Condition struct {
-			Text string `json:"text"`
-		}
-		string `json:"condition"`
-	} `json:"current"`
-	Forecast struct {
-		Forecastday []struct {
-			Day struct {
-				Maxtemp_c float64 `json:"maxtemp_c"`
-				Mintemp_c float64 `json:"mintemp_c"`
-			} `json:"day"`
-		} `json:"forecastday"`
-	} `json:"forecast"`
+	ID          int    `json:"id"`
+	Main        string `json:"main"`
+	Description string `json:"description"`
+	Icon        string `json:"icon"`
+}
+
+type Main struct {
+	Temp      float64 `json:"temp"`
+	FeelsLike float64 `json:"feels_like"`
+	TempMin   float64 `json:"temp_min"`
+	TempMax   float64 `json:"temp_max"`
+	Pressure  int     `json:"pressure"`
+	Humidity  int     `json:"humidity"`
+	SeaLevel  int     `json:"sea_level"`
+	GrndLevel int     `json:"grnd_level"`
+}
+
+type Wind struct {
+	Speed float64 `json:"speed"`
+	Deg   int     `json:"deg"`
+	Gust  float64 `json:"gust"`
+}
+
+type Clouds struct {
+	All int `json:"all"`
+}
+
+type Sys struct {
+	Type    int    `json:"type"`
+	ID      int    `json:"id"`
+	Country string `json:"country"`
+	Sunrise int64  `json:"sunrise"`
+	Sunset  int64  `json:"sunset"`
 }
 
 func readConfigFile(configFilePath string) (WeatherAPIConfig, error) {
@@ -90,25 +125,24 @@ func NewWeatherAPI(apiKey string, configFile string, httpClient *http.Client) *W
 	}
 }
 
-func (w *WeatherAPI) GetWeather() []Weather {
-	weather := make([]Weather, 0)
+func (w *WeatherAPI) GetWeather() []WeatherResponse {
+	weather := make([]WeatherResponse, 0)
 
 	for c, cp := range w.Config.Cities {
-		w, err := w.callCurrentAPI(fmt.Sprintf("%f,%f", cp.Lat, cp.Lon))
+		w, err := w.callCurrentAPI(cp.Lat, cp.Lon)
 		if err != nil {
 			slog.Warn("could not get weather", "city", c, "err", err)
 		} else {
-			w.Location.Name = c
 			weather = append(weather, *w)
 		}
 	}
 	return weather
 }
 
-func (w *WeatherAPI) callCurrentAPI(latlon string) (*Weather, error) {
+func (w *WeatherAPI) callCurrentAPI(lat, lon float64) (*WeatherResponse, error) {
 	const maxRetry = 3
-	baseURL := "https://api.weatherapi.com/v1/forecast.json"
-	queryStr := fmt.Sprintf("?key=%s&q=%s&lang=ru&days=1&aqi=no&alerts=no", w.ApiKey, url.QueryEscape(latlon))
+	baseURL := "https://api.openweathermap.org/data/2.5/weather"
+	queryStr := fmt.Sprintf("?lat=%f&lon=%f&appid=%s&lang=ru&units=metric", lat, lon, w.ApiKey)
 
 	for i := 1; i <= maxRetry; i++ {
 		resp, err := w.HttpClient.Get(baseURL + queryStr)
@@ -123,7 +157,7 @@ func (w *WeatherAPI) callCurrentAPI(latlon string) (*Weather, error) {
 		}
 
 		if resp.StatusCode/100 == 2 {
-			var weather Weather
+			var weather WeatherResponse
 			if err := json.Unmarshal(body, &weather); err != nil {
 				return nil, err
 			}

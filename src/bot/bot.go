@@ -118,7 +118,7 @@ func (b *Bot) mourningDigest() string {
 	// call weather api
 	weather := b.WeatherAPI.GetWeather()
 	sort.Slice(weather, func(i, j int) bool {
-		return weather[i].Current.Temp < weather[j].Current.Temp
+		return weather[i].Main.Temp < weather[j].Main.Temp
 	})
 	if len(weather) > 0 {
 		text += "\n_Прогноз погоды:_\n"
@@ -127,11 +127,11 @@ func (b *Bot) mourningDigest() string {
 				tgbotapi.ModeMarkdownV2,
 				fmt.Sprintf(
 					"%s: %d°C (max: %d°C, min: %d°C), %s \n",
-					w.Location.Name,
-					int(w.Current.Temp),
-					int(w.Forecast.Forecastday[0].Day.Maxtemp_c),
-					int(w.Forecast.Forecastday[0].Day.Mintemp_c),
-					w.Current.Condition.Text,
+					w.Name,
+					int(w.Main.Temp),
+					int(w.Main.TempMax),
+					int(w.Main.TempMin),
+					w.Weather[0].Description,
 				),
 			)
 		}
