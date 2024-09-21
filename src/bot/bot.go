@@ -147,8 +147,9 @@ func (b *Bot) mourningDigest() string {
 			translatedTitle, err := b.DeeplAPI.CallDeeplAPI([]string{n.Title})
 			if err != nil {
 				slog.Error("error calling deepl api", "err", err)
-				translatedTitle = tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, n.Title)
+				translatedTitle = n.Title
 			}
+			translatedTitle = tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, translatedTitle)
 			escaped_url := tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, n.URL)
 			fmt_news += fmt.Sprintf("%d\\. [%s](%s)\n", i+1, translatedTitle, escaped_url)
 		}
