@@ -126,11 +126,11 @@ func (b *Bot) mourningDigest() string {
 			location := time.FixedZone("custom", w.Timezone)
 			sunriseTime := time.Unix(w.Sys.Sunrise, 0).In(location).Format("15:04")
 			sunsetTime := time.Unix(w.Sys.Sunset, 0).In(location).Format("15:04")
+			text += fmt.Sprintf("*%s:*\n", w.Name)
 			text += tgbotapi.EscapeText(
 				tgbotapi.ModeMarkdownV2,
 				fmt.Sprintf(
-					"%s:\n  %d°C (max: %d°C, min: %d°C), %s\n  рассвет: %s\n  закат: %s",
-					w.Name,
+					"  %d°C (max: %d°C, min: %d°C), %s\n  рассвет: %s\n  закат: %s\n",
 					int(w.Main.Temp),
 					int(w.Main.TempMax),
 					int(w.Main.TempMin),

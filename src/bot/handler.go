@@ -34,11 +34,11 @@ func getCurrentWeather(b *Bot, msg *tgbotapi.Message) {
 			location := time.FixedZone("custom", w.Timezone)
 			sunriseTime := time.Unix(w.Sys.Sunrise, 0).In(location).Format("15:04")
 			sunsetTime := time.Unix(w.Sys.Sunset, 0).In(location).Format("15:04")
+			msgConfig.Text += fmt.Sprintf("*%s:*\n", w.Name)
 			msgConfig.Text += tgbotapi.EscapeText(
 				tgbotapi.ModeMarkdownV2,
 				fmt.Sprintf(
-					"%s:\n  %d°C (max: %d°C, min: %d°C), %s\n  рассвет: %s\n  закат: %s",
-					w.Name,
+					"  %d°C (max: %d°C, min: %d°C), %s\n  рассвет: %s\n  закат: %s\n",
 					int(w.Main.Temp),
 					int(w.Main.TempMax),
 					int(w.Main.TempMin),
@@ -49,6 +49,7 @@ func getCurrentWeather(b *Bot, msg *tgbotapi.Message) {
 			)
 		}
 		msgConfig.ReplyToMessageID = msg.MessageID
+		msgConfig.ParseMode = tgbotapi.ModeMarkdownV2
 		b.sendMessage(msgConfig)
 		return
 	} else {
