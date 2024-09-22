@@ -40,7 +40,7 @@ func (a *DeeplAPI) calcCacheKey(text []string) string {
 	concatenatedString := strings.Join(text, "")
 	hashBytes := md5.Sum([]byte(concatenatedString))
 	hashSlice := hashBytes[:]
-	return "deeplapi-" + hex.EncodeToString(hashSlice)
+	return "deeplapi_" + hex.EncodeToString(hashSlice)
 }
 
 func (a *DeeplAPI) CallDeeplAPI(text []string) (string, error) {
