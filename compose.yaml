@@ -20,4 +20,18 @@ services:
       - MINIFLUXAPI_BASEURL=https://miniflux.rahfar.com
       - MINIFLUXAPI_SITEURL=https://www.nytimes.com
       - DEEPLAPI_KEY
+      - REDIS_ADDR=redis:6379
     restart: unless-stopped
+    depends_on:
+      - redis
+
+  redis:
+    image: 'redis:6'
+    container_name: redis
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+    driver: local

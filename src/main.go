@@ -11,6 +11,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/jessevdk/go-flags"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/rahfar/familybot/src/apiclient"
 	"github.com/rahfar/familybot/src/bot"
@@ -42,9 +43,10 @@ var opts struct {
 		Key     string `long:"key" env:"KEY"`
 		BaseURL string `long:"baseurl" env:"BASEURL" default:"https://api-free.deepl.com"`
 	} `group:"deeplapi" namespace:"deeplapi" env-namespace:"DEEPLAPI"`
-	Host string `long:"host" env:"HOST" default:"0.0.0.0"`
-	Port string `long:"port" env:"PORT" default:"8080"`
-	Dbg  bool   `long:"debug" env:"DEBUG" description:"debug mode"`
+	RedisAddr string `long:"redisaddr" env:"REDIS_ADDR" default:"localhost:6379"`
+	Host      string `long:"host" env:"HOST" default:"0.0.0.0"`
+	Port      string `long:"port" env:"PORT" default:"8080"`
+	Dbg       bool   `long:"debug" env:"DEBUG" description:"debug mode"`
 }
 
 func main() {
@@ -69,10 +71,11 @@ func main() {
 
 	httpClient := &http.Client{Timeout: 15 * time.Second}
 	openaiHttpClient := &http.Client{Timeout: 60 * time.Second}
+	redisClient := redis.NewClient(&redis.Options{Addr: opts.RedisAddr})
 
 	exchangeAPI := &apiclient.ExchangeAPI{ApiKey: opts.CurrencyAPI.Key, HttpClient: httpClient}
 	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: openaiHttpClient, GPTModel: opts.OpenaiAPI.GPTModel}
-	deeplAPI := &apiclient.DeeplAPI{HttpClient: httpClient, ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
+	deeplAPI := &apiclient.DeeplAPI{HttpClient: httpClient, RedisClient: redisClient, ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
 	minifluxAPI := &apiclient.MinifluxAPI{ApiKey: opts.MinifluxAPI.Key, BaseURL: opts.MinifluxAPI.BaseURL, SiteURL: opts.MinifluxAPI.SiteURL}
 	weatherAPI := apiclient.NewWeatherAPI(opts.WeatherAPI.Key, opts.WeatherAPI.ConfigFile, httpClient)
 

@@ -1,6 +1,6 @@
 name: build and deploy
 
-on: 
+on:
   push:
     branches:
       - master
@@ -36,4 +36,5 @@ jobs:
             git fetch --all &&
             git reset --hard origin/master &&
             docker compose build --build-arg REVISION=$(git rev-parse --short master) &&
-            docker compose up -d --force-recreate
+            docker compose up -d redis &&
+            docker compose up -d --force-recreate familybot
