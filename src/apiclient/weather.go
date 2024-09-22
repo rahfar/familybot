@@ -1,6 +1,7 @@
 package apiclient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,12 +9,15 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type WeatherAPI struct {
-	ApiKey     string
-	Config     WeatherAPIConfig
-	HttpClient *http.Client
+	ApiKey      string
+	Config      WeatherAPIConfig
+	HttpClient  *http.Client
+	RedisClient *redis.Client
 }
 
 type WeatherAPIConfig struct {
@@ -25,27 +29,42 @@ type CityPosition struct {
 	Lon float64 `json:"lon"`
 }
 
+// Root struct represents the entire JSON response
 type WeatherResponse struct {
-	Coord      Coord     `json:"coord"`
-	Weather    []Weather `json:"weather"`
-	Base       string    `json:"base"`
-	Main       Main      `json:"main"`
-	Visibility int       `json:"visibility"`
-	Wind       Wind      `json:"wind"`
-	Clouds     Clouds    `json:"clouds"`
+	Cod     string        `json:"cod"`
+	Message int           `json:"message"`
+	Cnt     int           `json:"cnt"`
+	List    []WeatherItem `json:"list"`
+	City    City          `json:"city"`
+}
+
+// WeatherItem struct represents each item in the 'list' array
+type WeatherItem struct {
 	Dt         int64     `json:"dt"`
+	Main       Main      `json:"main"`
+	Weather    []Weather `json:"weather"`
+	Clouds     Clouds    `json:"clouds"`
+	Wind       Wind      `json:"wind"`
+	Visibility int       `json:"visibility"`
+	Pop        float64   `json:"pop"`
 	Sys        Sys       `json:"sys"`
-	Timezone   int       `json:"timezone"`
-	ID         int       `json:"id"`
-	Name       string    `json:"name"`
-	Cod        int       `json:"cod"`
+	DtTxt      string    `json:"dt_txt"`
 }
 
-type Coord struct {
-	Lon float64 `json:"lon"`
-	Lat float64 `json:"lat"`
+// Main struct contains details on temperature and pressure
+type Main struct {
+	Temp      float64 `json:"temp"`
+	FeelsLike float64 `json:"feels_like"`
+	TempMin   float64 `json:"temp_min"`
+	TempMax   float64 `json:"temp_max"`
+	Pressure  int     `json:"pressure"`
+	SeaLevel  int     `json:"sea_level"`
+	GrndLevel int     `json:"grnd_level"`
+	Humidity  int     `json:"humidity"`
+	TempKf    float64 `json:"temp_kf"`
 }
 
+// Weather struct provides weather summary and icon
 type Weather struct {
 	ID          int    `json:"id"`
 	Main        string `json:"main"`
@@ -53,33 +72,39 @@ type Weather struct {
 	Icon        string `json:"icon"`
 }
 
-type Main struct {
-	Temp      float64 `json:"temp"`
-	FeelsLike float64 `json:"feels_like"`
-	TempMin   float64 `json:"temp_min"`
-	TempMax   float64 `json:"temp_max"`
-	Pressure  int     `json:"pressure"`
-	Humidity  int     `json:"humidity"`
-	SeaLevel  int     `json:"sea_level"`
-	GrndLevel int     `json:"grnd_level"`
+// Clouds struct provides cloudiness percentage
+type Clouds struct {
+	All int `json:"all"`
 }
 
+// Wind struct contains information about wind speed and direction
 type Wind struct {
 	Speed float64 `json:"speed"`
 	Deg   int     `json:"deg"`
 	Gust  float64 `json:"gust"`
 }
 
-type Clouds struct {
-	All int `json:"all"`
+// Sys struct provides part of day information
+type Sys struct {
+	Pod string `json:"pod"`
 }
 
-type Sys struct {
-	Type    int    `json:"type"`
-	ID      int    `json:"id"`
-	Country string `json:"country"`
-	Sunrise int64  `json:"sunrise"`
-	Sunset  int64  `json:"sunset"`
+// City struct contains city information
+type City struct {
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	Coord      Coord  `json:"coord"`
+	Country    string `json:"country"`
+	Population int    `json:"population"`
+	Timezone   int    `json:"timezone"`
+	Sunrise    int64  `json:"sunrise"`
+	Sunset     int64  `json:"sunset"`
+}
+
+// Coord struct provides geographical coordinates of the city
+type Coord struct {
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
 }
 
 func readConfigFile(configFilePath string) (WeatherAPIConfig, error) {
@@ -111,7 +136,7 @@ func readConfigFile(configFilePath string) (WeatherAPIConfig, error) {
 	return config, nil
 }
 
-func NewWeatherAPI(apiKey string, configFile string, httpClient *http.Client) *WeatherAPI {
+func NewWeatherAPI(apiKey string, configFile string, httpClient *http.Client, redisCliend *redis.Client) *WeatherAPI {
 	cfg, err := readConfigFile(configFile)
 
 	if err != nil {
@@ -122,6 +147,7 @@ func NewWeatherAPI(apiKey string, configFile string, httpClient *http.Client) *W
 		ApiKey:     apiKey,
 		Config:     cfg,
 		HttpClient: httpClient,
+		RedisClient: redisCliend,
 	}
 }
 
@@ -133,17 +159,67 @@ func (w *WeatherAPI) GetWeather() []WeatherResponse {
 		if err != nil {
 			slog.Warn("could not get weather", "city", c, "err", err)
 		} else {
-			w.Name = c
+			w.City.Name = c
 			weather = append(weather, *w)
 		}
 	}
 	return weather
 }
 
+func calcCacheKey(lat, lon float64) string {
+	return fmt.Sprintf("openweatherapi_lat=%f&lon=%f", lat, lon)
+}
+
+func (w *WeatherAPI) GetMinMaxTemp(weather WeatherResponse) (float64, float64) {
+	var minTemp, maxTemp float64
+	// Parse the date of the first entry
+	firstDate, err := time.Parse("2006-01-02 15:04:05", weather.List[0].DtTxt)
+	if err != nil {
+		return minTemp, maxTemp
+	}
+	firstDay := firstDate.Day()
+
+	maxTemp = weather.List[0].Main.Temp
+	minTemp = weather.List[0].Main.Temp
+
+	// Iterate over the weather list to find the maximum temperature for the first day
+	for _, item := range weather.List {
+		itemDate, err := time.Parse("2006-01-02 15:04:05", item.DtTxt)
+		if err != nil {
+			continue
+		}
+		if itemDate.Day() == firstDay {
+			if item.Main.Temp > maxTemp {
+				maxTemp = item.Main.Temp
+			}
+			if item.Main.Temp < minTemp {
+				minTemp = item.Main.Temp
+			}
+		} else {
+			break // Stop when leaving the first day
+		}
+	}
+
+	return minTemp, maxTemp
+}
+
 func (w *WeatherAPI) callCurrentAPI(lat, lon float64) (*WeatherResponse, error) {
 	const maxRetry = 3
-	baseURL := "https://api.openweathermap.org/data/2.5/weather"
+	var weather WeatherResponse
+	ctx := context.Background()
+	baseURL := "https://api.openweathermap.org/data/2.5/forecast"
 	queryStr := fmt.Sprintf("?lat=%f&lon=%f&appid=%s&lang=ru&units=metric", lat, lon, w.ApiKey)
+
+	cacheKey := calcCacheKey(lat, lon)
+
+	v, err := w.RedisClient.Get(ctx, cacheKey).Result()
+	if err == nil {
+		slog.Info("hit deeplapi cache", "key", cacheKey)
+		err := json.Unmarshal([]byte(v), &weather)
+		if err == nil {
+			return &weather, nil
+		}
+	}
 
 	for i := 1; i <= maxRetry; i++ {
 		resp, err := w.HttpClient.Get(baseURL + queryStr)
@@ -158,8 +234,12 @@ func (w *WeatherAPI) callCurrentAPI(lat, lon float64) (*WeatherResponse, error) 
 		}
 
 		if resp.StatusCode/100 == 2 {
-			var weather WeatherResponse
-			if err := json.Unmarshal(body, &weather); err != nil {
+			err := w.RedisClient.SetArgs(ctx, cacheKey, body, redis.SetArgs{TTL: 3 * time.Hour}).Err()
+			if err != nil {
+				slog.Info("could not write cache", "err", err)
+			}
+			err = json.Unmarshal(body, &weather)
+			if err != nil {
 				return nil, err
 			}
 			return &weather, nil

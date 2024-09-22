@@ -27,22 +27,23 @@ func getCurrentWeather(b *Bot, msg *tgbotapi.Message) {
 	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "")
 	weather := b.WeatherAPI.GetWeather()
 	sort.Slice(weather, func(i, j int) bool {
-		return weather[i].Main.Temp < weather[j].Main.Temp
+		return weather[i].List[0].Main.Temp < weather[j].List[0].Main.Temp
 	})
 	if len(weather) > 0 {
 		for _, w := range weather {
-			location := time.FixedZone("custom", w.Timezone)
-			sunriseTime := time.Unix(w.Sys.Sunrise, 0).In(location).Format("15:04")
-			sunsetTime := time.Unix(w.Sys.Sunset, 0).In(location).Format("15:04")
-			msgConfig.Text += fmt.Sprintf("*%s:*\n", w.Name)
+			location := time.FixedZone("custom", w.City.Timezone)
+			sunriseTime := time.Unix(w.City.Sunrise, 0).In(location).Format("15:04")
+			sunsetTime := time.Unix(w.City.Sunset, 0).In(location).Format("15:04")
+			minTemp, maxTemp := b.WeatherAPI.GetMinMaxTemp(w)
+			msgConfig.Text += fmt.Sprintf("*%s:*\n", w.City.Name)
 			msgConfig.Text += tgbotapi.EscapeText(
 				tgbotapi.ModeMarkdownV2,
 				fmt.Sprintf(
-					"  %d°C (max: %d°C, min: %d°C), %s\n  восход: %s закат: %s\n",
-					int(w.Main.Temp),
-					int(w.Main.TempMax),
-					int(w.Main.TempMin),
-					w.Weather[0].Description,
+					"  %d°C (min: %d°C, max: %d°C), %s\n  восход: %s закат: %s\n",
+					int(w.List[0].Main.Temp),
+					int(minTemp),
+					int(maxTemp),
+					w.List[0].Weather[0].Description,
 					sunriseTime,
 					sunsetTime,
 				),

@@ -77,7 +77,7 @@ func main() {
 	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: openaiHttpClient, GPTModel: opts.OpenaiAPI.GPTModel}
 	deeplAPI := &apiclient.DeeplAPI{HttpClient: httpClient, RedisClient: redisClient, ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
 	minifluxAPI := &apiclient.MinifluxAPI{ApiKey: opts.MinifluxAPI.Key, BaseURL: opts.MinifluxAPI.BaseURL, SiteURL: opts.MinifluxAPI.SiteURL}
-	weatherAPI := apiclient.NewWeatherAPI(opts.WeatherAPI.Key, opts.WeatherAPI.ConfigFile, httpClient)
+	weatherAPI := apiclient.NewWeatherAPI(opts.WeatherAPI.Key, opts.WeatherAPI.ConfigFile, httpClient, redisClient)
 
 	b := bot.Bot{
 		Token:            opts.Telegram.Token,
