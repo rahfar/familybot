@@ -1,17 +1,21 @@
 package apiclient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type ExchangeAPI struct {
-	ApiKey     string
-	HttpClient *http.Client
+	ApiKey      string
+	HttpClient  *http.Client
+	RedisClient *redis.Client
 }
 
 type ExchangeRates struct {
@@ -33,6 +37,7 @@ type ExchangeRates struct {
 
 func (e *ExchangeAPI) GetExchangeRates() (*ExchangeRates, error) {
 	const maxRetry = 3
+	var xr ExchangeRates
 	baseURL := "https://api.currencyapi.com/v3/latest"
 	queryStr := fmt.Sprintf("?apikey=%s", e.ApiKey)
 
@@ -49,7 +54,6 @@ func (e *ExchangeAPI) GetExchangeRates() (*ExchangeRates, error) {
 		}
 
 		if resp.StatusCode/100 == 2 {
-			var xr ExchangeRates
 			if err := json.Unmarshal(body, &xr); err != nil {
 				slog.Error("could not unmarshal json body", "err", err)
 				return nil, err
@@ -70,8 +74,21 @@ func (e *ExchangeAPI) GetExchangeRates() (*ExchangeRates, error) {
 
 func (e *ExchangeAPI) GetHistoryExchangeRates(datetime time.Time) (*ExchangeRates, error) {
 	const maxRetry = 3
+	var xr ExchangeRates
+	ctx := context.Background()
 	baseURL := "https://api.currencyapi.com/v3/historical"
 	queryStr := fmt.Sprintf("?apikey=%s&date=%s", e.ApiKey, datetime.Format("2006-01-02"))
+
+	cacheKey := "currencyapi_" + datetime.Format("2006-01-02")
+
+	v, err := e.RedisClient.Get(ctx, cacheKey).Result()
+	if err == nil {
+		slog.Info("hit deeplapi cache", "key", cacheKey)
+		err := json.Unmarshal([]byte(v), &xr)
+		if err == nil {
+			return &xr, nil
+		}
+	}
 
 	for i := 1; i <= maxRetry; i++ {
 		resp, err := e.HttpClient.Get(baseURL + queryStr)
@@ -86,8 +103,11 @@ func (e *ExchangeAPI) GetHistoryExchangeRates(datetime time.Time) (*ExchangeRate
 		}
 
 		if resp.StatusCode/100 == 2 {
-			var xr ExchangeRates
-			if err := json.Unmarshal(body, &xr); err != nil {
+			if err := e.RedisClient.SetArgs(ctx, cacheKey, body, redis.SetArgs{TTL: 7 * 24 * time.Hour}).Err(); err != nil {
+				slog.Info("could not write cache", "err", err)
+			}
+			err := json.Unmarshal(body, &xr)
+			if err != nil {
 				slog.Error("could not unmarshal json body", "err", err)
 				return nil, err
 			}

@@ -40,7 +40,7 @@ func (a *DeeplAPI) calcCacheKey(text []string) string {
 	concatenatedString := strings.Join(text, "")
 	hashBytes := md5.Sum([]byte(concatenatedString))
 	hashSlice := hashBytes[:]
-	return hex.EncodeToString(hashSlice)
+	return "deeplapi-" + hex.EncodeToString(hashSlice)
 }
 
 func (a *DeeplAPI) CallDeeplAPI(text []string) (string, error) {
@@ -85,7 +85,7 @@ func (a *DeeplAPI) CallDeeplAPI(text []string) (string, error) {
 				return "", err
 			}
 			if len(t.Translations) > 0 {
-				err := a.RedisClient.SetArgs(ctx, cacheKey, t.Translations[0].Text, redis.SetArgs{TTL: time.Hour}).Err()
+				err := a.RedisClient.SetArgs(ctx, cacheKey, t.Translations[0].Text, redis.SetArgs{TTL: 24 * time.Hour}).Err()
 				if err != nil {
 					slog.Info("could not write cache", "err", err)
 				}

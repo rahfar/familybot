@@ -86,7 +86,7 @@ func (b *Bot) mourningDigest() string {
 	text := "Доброе утро\\! 🌅\n"
 
 	// call currency api
-	xr_today, err1 := b.ExchangeAPI.GetExchangeRates()
+	xr_today, err1 := b.ExchangeAPI.GetHistoryExchangeRates(time.Now().UTC())
 	xr_yesterday, err2 := b.ExchangeAPI.GetHistoryExchangeRates(time.Now().UTC().Add(-48 * time.Hour))
 	switch {
 	case err1 != nil:
