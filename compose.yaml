@@ -15,7 +15,7 @@ services:
       - WEATHERAPI_KEY
       - CURRENCYAPI_KEY
       - OPENAIAPI_KEY
-      - OPENAIAPI_GPTMODEL=gpt-4o-2024-08-06
+      - OPENAIAPI_GPTMODEL=gpt-4o
       - MINIFLUXAPI_KEY
       - MINIFLUXAPI_BASEURL=https://miniflux.rahfar.com
       - MINIFLUXAPI_SITEURL=https://www.nytimes.com
