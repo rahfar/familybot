@@ -21,6 +21,7 @@ services:
       - MINIFLUXAPI_SITEURL=https://www.nytimes.com
       - DEEPLAPI_KEY
       - REDIS_ADDR=redis:6379
+      - ANTHROPICAPI_KEY
     restart: unless-stopped
     depends_on:
       - redis

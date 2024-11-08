@@ -32,6 +32,7 @@ type Bot struct {
 	WeatherAPI       *apiclient.WeatherAPI
 	MinifluxAPI      *apiclient.MinifluxAPI
 	DeeplAPI         *apiclient.DeeplAPI
+	AnthropicAPI     *apiclient.AnthropicAPI
 }
 
 func (b *Bot) Run() {

@@ -25,6 +25,7 @@ jobs:
             0d11a328-87b9-4ade-837b-b0ef00e4baff > DEEPLAPI_KEY
             c9927e64-9dfb-49df-9dec-b1f50144f046 > TG_NOTIFICATION_BOT_TOKEN
             dfdace6a-de7f-4d62-b995-b1f5014bf00b > TG_NOTIFICATION_BOT_CHATID
+            2af121a5-3856-4e27-9b65-b222006e7d15 > ANTHROPICAPI_KEY
 
       - name: Deploy
         uses: appleboy/ssh-action@v1.0.3
@@ -32,7 +33,7 @@ jobs:
           host: ${{ secrets.TARGET_HOST }}
           username: ${{ secrets.TARGET_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          envs: TELEGRAM_TOKEN,TELEGRAM_GROUP,TELEGRAM_ALLOWEDUSERNAMES,WEATHERAPI_KEY,CURRENCYAPI_KEY,OPENAIAPI_KEY,MINIFLUXAPI_KEY,DEEPLAPI_KEY
+          envs: TELEGRAM_TOKEN,TELEGRAM_GROUP,TELEGRAM_ALLOWEDUSERNAMES,WEATHERAPI_KEY,CURRENCYAPI_KEY,OPENAIAPI_KEY,MINIFLUXAPI_KEY,DEEPLAPI_KEY,ANTHROPICAPI_KEY
           script: |
             cd ~/familybot &&
             git fetch --all &&
