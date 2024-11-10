@@ -75,12 +75,11 @@ func main() {
 
 	slog.Info("bot is authorized", "bot-username", bot_api.Self.UserName)
 
-	httpClient := &http.Client{Timeout: 15 * time.Second}
-	openaiHttpClient := &http.Client{Timeout: 60 * time.Second}
+	httpClient := &http.Client{Timeout: 60 * time.Second}
 	redisClient := redis.NewClient(&redis.Options{Addr: opts.RedisAddr})
 
 	exchangeAPI := &apiclient.ExchangeAPI{ApiKey: opts.CurrencyAPI.Key, RedisClient: redisClient, HttpClient: httpClient}
-	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: openaiHttpClient, GPTModel: opts.OpenaiAPI.GPTModel}
+	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: httpClient, GPTModel: opts.OpenaiAPI.GPTModel}
 	deeplAPI := &apiclient.DeeplAPI{HttpClient: httpClient, RedisClient: redisClient, ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
 	minifluxAPI := &apiclient.MinifluxAPI{ApiKey: opts.MinifluxAPI.Key, BaseURL: opts.MinifluxAPI.BaseURL, SiteURL: opts.MinifluxAPI.SiteURL}
 	weatherAPI := apiclient.NewWeatherAPI(opts.WeatherAPI.Key, opts.WeatherAPI.ConfigFile, httpClient, redisClient)
