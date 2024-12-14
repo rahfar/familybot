@@ -26,7 +26,6 @@ jobs:
             c9927e64-9dfb-49df-9dec-b1f50144f046 > TG_NOTIFICATION_BOT_TOKEN
             dfdace6a-de7f-4d62-b995-b1f5014bf00b > TG_NOTIFICATION_BOT_CHATID
             2af121a5-3856-4e27-9b65-b222006e7d15 > ANTHROPICAPI_KEY
-
       - name: Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -52,6 +51,7 @@ jobs:
             Repository: ${{ github.repository }}
             Branch: ${{ github.ref_name }}
             Commit: ${{ github.sha }}
+            Workflow: ${{ gitea.workflow }}
             Run: ${{ gitea.server_url }}/${{ gitea.repository }}/actions/runs/${{ gitea.run_number }}
 
             ${{ job.status == 'success' && '✅ Deployment completed successfully!' || '❌ Deployment failed!' }}
