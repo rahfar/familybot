@@ -9,9 +9,9 @@ services:
     environment:
       - DEBUG
       - TZ=Europe/Helsinki
-      - TELEGRAM_GROUP
-      - TELEGRAM_ALLOWEDUSERNAMES
-      - TELEGRAM_TOKEN
+      - TG_GROUP
+      - TG_ALLOWEDUSERNAMES
+      - TG_TOKEN
       - WEATHERAPI_KEY
       - CURRENCYAPI_KEY
       - OPENAIAPI_KEY

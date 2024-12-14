@@ -22,7 +22,7 @@ var opts struct {
 		Token            string `long:"token" env:"TOKEN" description:"telegram bot token" default:"test"`
 		GroupID          int64  `long:"group" env:"GROUP" description:"group id"`
 		AllowedUsernames string `long:"allowedusernames" env:"ALLOWEDUSERNAMES" description:"list of usernames that will have access to the bot" default:""`
-	} `group:"telegram" namespace:"telegram" env-namespace:"TELEGRAM"`
+	} `group:"telegram" namespace:"telegram" env-namespace:"TG"`
 	WeatherAPI struct {
 		Key        string `long:"key" env:"KEY"`
 		ConfigFile string `long:"configfile" env:"configfile" default:"weatherapi_config.json" description:"config file for weather api"`
