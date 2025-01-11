@@ -23,6 +23,7 @@ type Bot struct {
 	Host             string
 	Port             string
 	AllowedUsernames []string
+	AllowedChats     []int64
 	GroupID          int64
 	Commands         map[string]Command
 	AskGPTCache      *expirable.LRU[string, []apiclient.GPTResponse]
@@ -186,6 +187,11 @@ func (b *Bot) isMessageFromAllowedChat(update tgbotapi.Update) bool {
 	}
 	for _, un := range b.AllowedUsernames {
 		if un == update.Message.Chat.UserName {
+			return true
+		}
+	}
+	for _, un := range b.AllowedChats {
+		if un == update.Message.Chat.ID {
 			return true
 		}
 	}

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +24,7 @@ var opts struct {
 		Token            string `long:"token" env:"TOKEN" description:"telegram bot token" default:"test"`
 		GroupID          int64  `long:"group" env:"GROUP" description:"group id"`
 		AllowedUsernames string `long:"allowedusernames" env:"ALLOWEDUSERNAMES" description:"list of usernames that will have access to the bot" default:""`
+		AllowedChats     string `long:"allowedchats" env:"ALLOWEDCHATS" description:"list of chats that will have access to the bot" default:""`
 	} `group:"telegram" namespace:"telegram" env-namespace:"TG"`
 	WeatherAPI struct {
 		Key        string `long:"key" env:"KEY"`
@@ -53,6 +56,26 @@ var opts struct {
 	Host      string `long:"host" env:"HOST" default:"0.0.0.0"`
 	Port      string `long:"port" env:"PORT" default:"8080"`
 	Dbg       bool   `long:"debug" env:"DEBUG" description:"debug mode"`
+}
+
+func ConvertCommaSeparatedStringToInt64Slice(input string) ([]int64, error) {
+	// Split the input string by commas
+	parts := strings.Split(input, ",")
+	intSlice := make([]int64, 0, len(parts))
+
+	for _, part := range parts {
+		// Trim whitespace from each part
+		part = strings.TrimSpace(part)
+
+		// Convert the string to int64
+		num, err := strconv.ParseInt(part, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error converting %s to int64: %v", part, err)
+		}
+		intSlice = append(intSlice, num)
+	}
+
+	return intSlice, nil
 }
 
 func main() {
@@ -92,12 +115,19 @@ func main() {
 		MaxTokens:   opts.AnthropicAPI.MaxTokens,
 	}
 
+	allowedchats, err := ConvertCommaSeparatedStringToInt64Slice(opts.Telegram.AllowedChats)
+	if err != nil {
+		slog.Error("Error parsing AllowedChats")
+		panic(err)
+	}
+
 	b := bot.Bot{
 		Token:            opts.Telegram.Token,
 		Dbg:              opts.Dbg,
 		Host:             opts.Host,
 		Port:             opts.Port,
 		AllowedUsernames: strings.Split(opts.Telegram.AllowedUsernames, ","),
+		AllowedChats:     allowedchats,
 		GroupID:          opts.Telegram.GroupID,
 		Commands:         bot.Commands,
 		AskGPTCache:      expirable.NewLRU[string, []apiclient.GPTResponse](1000, nil, time.Minute*30),

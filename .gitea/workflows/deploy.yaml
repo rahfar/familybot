@@ -18,6 +18,7 @@ jobs:
             7f42da1c-25ae-497a-89de-b041013fa10a > TG_TOKEN
             0a25642b-b877-4415-962b-b041013fb276 > TG_GROUP
             bc6f96c0-c7a9-4273-bac0-b041013fc1fa > TG_ALLOWEDUSERNAMES
+            fd77264c-5755-497f-a2d0-b262017dde4b > TG_ALLOWEDCHATS
             627efa5d-6fdb-48bd-8956-b041013fcdab > WEATHERAPI_KEY
             3cdeba53-2ee5-49c6-9956-b041013fe498 > CURRENCYAPI_KEY
             645021f0-b0eb-41af-9aa9-b041013ff1a5 > OPENAIAPI_KEY
@@ -32,7 +33,7 @@ jobs:
           host: ${{ secrets.TARGET_HOST }}
           username: ${{ secrets.TARGET_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          envs: TG_TOKEN,TG_GROUP,TG_ALLOWEDUSERNAMES,WEATHERAPI_KEY,CURRENCYAPI_KEY,OPENAIAPI_KEY,MINIFLUXAPI_KEY,DEEPLAPI_KEY,ANTHROPICAPI_KEY
+          envs: TG_TOKEN,TG_GROUP,TG_ALLOWEDUSERNAMES,TG_ALLOWEDCHATS,WEATHERAPI_KEY,CURRENCYAPI_KEY,OPENAIAPI_KEY,MINIFLUXAPI_KEY,DEEPLAPI_KEY,ANTHROPICAPI_KEY
           script: |
             cd ~/familybot &&
             git fetch --all &&
