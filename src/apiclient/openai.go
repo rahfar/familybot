@@ -24,18 +24,8 @@ type OpenaiAPI struct {
 
 const MaxPromptSymbolSize = 4096
 
-func (o *OpenaiAPI) CallGPT(question string, responseHistory []GPTResponse) (string, error) {
+func (o *OpenaiAPI) callChatCompletion(messages []openai.ChatCompletionMessage) (string, error) {
 	const maxRetry = 3
-
-	if len(question) > MaxPromptSymbolSize {
-		return "Слишком длинный вопрос, попробуйте покороче", nil
-	}
-
-	messages := make([]openai.ChatCompletionMessage, 0)
-	for _, v := range responseHistory {
-		messages = append(messages, openai.ChatCompletionMessage{Role: v.Role, Content: v.Content})
-	}
-	messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: question})
 
 	for i := 1; i <= maxRetry; i++ {
 		client := openai.NewClient(o.ApiKey)
@@ -59,39 +49,56 @@ func (o *OpenaiAPI) CallGPT(question string, responseHistory []GPTResponse) (str
 	return "", fmt.Errorf("max retries reached")
 }
 
-func (o *OpenaiAPI) CallGPTforEng(text string) (string, error) {
-	const maxRetry = 3
+func (o *OpenaiAPI) CallGPT(question string, responseHistory []GPTResponse) (string, error) {
+	if len(question) > MaxPromptSymbolSize {
+		return "Слишком длинный вопрос, попробуйте покороче", nil
+	}
 
+	messages := make([]openai.ChatCompletionMessage, len(responseHistory)+1)
+	for _, v := range responseHistory {
+		messages = append(messages, openai.ChatCompletionMessage{Role: v.Role, Content: v.Content})
+	}
+	messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: question})
+	return o.callChatCompletion(messages)
+}
+
+func (o *OpenaiAPI) CallGPTforEng(text string) (string, error) {
 	gptcontext := "Act as an expert in English language arts with advanced experience in proofreading, editing, spelling, grammar, proper sentence structure, and punctuation. You have critical thinking skills with the ability to analyze and evaluate information, arguments, and ideas, and to make logical and well-supported judgments and decisions. You will be provided content from a professional business to proofread in the form of emails, texts, and instant messages to make sure they are error-free before sending. Your approach would be to carefully read through each communication to identify any errors, inconsistencies, or areas where clarity could be improved. Your overall goal is to ensure communications are error-free, clear, and effective in achieving their intended purpose. You will make appropriate updates to increase readability, professionalism, and cohesiveness, while also ensuring that your intended meaning is conveyed accurately. Only reply to the correction, and the improvements, and nothing else, do not write explanations."
 
 	if len(text) > MaxPromptSymbolSize {
 		return "Слишком длинный вопрос, попробуйте покороче", nil
 	}
 
-	messages := make([]openai.ChatCompletionMessage, 0)
-	messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleSystem, Content: gptcontext})
-	messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: "Fix English: " + text})
-
-	for i := 1; i <= maxRetry; i++ {
-		client := openai.NewClient(o.ApiKey)
-		resp, err := client.CreateChatCompletion(
-			context.Background(),
-			openai.ChatCompletionRequest{
-				Model:    o.GPTModel,
-				Messages: messages,
-			},
-		)
-		if err == nil {
-			return resp.Choices[0].Message.Content, nil
-		}
-		if APIError, ok := err.(*openai.APIError); ok && i < maxRetry {
-			slog.Info("got error response from api, retrying in 5 seconds...", "retry-cnt", i, "status", APIError.HTTPStatusCode)
-			time.Sleep(5 * time.Second)
-		} else {
-			return "", err
-		}
+	messages := []openai.ChatCompletionMessage{
+		{Role: openai.ChatMessageRoleSystem, Content: gptcontext},
+		{Role: openai.ChatMessageRoleUser, Content: "Fix English: " + text},
 	}
-	return "", fmt.Errorf("max retries reached")
+
+	return o.callChatCompletion(messages)
+}
+
+func (o *OpenaiAPI) CallGPTEng2Ru(text string) (string, error) {
+	prompt := "translate from english to russian: " + text
+
+	if len(prompt) > MaxPromptSymbolSize {
+		return "Слишком длинный вопрос, попробуйте покороче", nil
+	}
+
+	messages := []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: prompt}}
+
+	return o.callChatCompletion(messages)
+}
+
+func (o *OpenaiAPI) CallGPTRu2Eng(text string) (string, error) {
+	prompt := "translate from russian to english: " + text
+
+	if len(prompt) > MaxPromptSymbolSize {
+		return "Слишком длинный вопрос, попробуйте покороче", nil
+	}
+
+	messages := []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: prompt}}
+
+	return o.callChatCompletion(messages)
 }
 
 func (o *OpenaiAPI) CallWhisper(filePath string) (string, error) {

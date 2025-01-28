@@ -9,6 +9,7 @@ import (
 	"path"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -61,12 +62,46 @@ func getCurrentWeather(b *Bot, msg *tgbotapi.Message) {
 	}
 }
 
+func getRevision(b *Bot, msg *tgbotapi.Message) {
+	rev := os.Getenv("REVISION")
+	if len(rev) == 0 {
+		return
+	}
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, rev)
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
+}
+
+func whoAmI(b *Bot, msg *tgbotapi.Message) {
+	if !msg.Chat.IsPrivate() && !msg.Chat.IsGroup() {
+		return
+	}
+	chatId := msg.Chat.ID
+	userId := msg.From.ID
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("ChatID: %d\nUserID: %d", chatId, userId))
+	b.sendMessage(msgConfig)
+}
+
+func sendMourningDigest(b *Bot, msg *tgbotapi.Message) {
+	text := b.mourningDigest()
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, text)
+	msgConfig.ParseMode = tgbotapi.ModeMarkdownV2
+	msgConfig.DisableWebPagePreview = true
+	b.sendMessage(msgConfig)
+}
+
 func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 	var question string
 	if msg.IsCommand() {
-		question = msg.CommandArguments()
+		question = strings.TrimSpace(msg.CommandArguments())
 	} else {
-		question = msg.Text
+		question = strings.TrimSpace(msg.Text)
+	}
+	if len(question) == 0 {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Пустой входной вопрос")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
 	}
 
 	responseHistory, ok := b.AskGPTCache.Get(strconv.FormatInt(msg.Chat.ID, 10))
@@ -169,18 +204,15 @@ func transcriptVoice(b *Bot, msg *tgbotapi.Message) {
 	b.sendMessage(msgConfig)
 }
 
-func getRevision(b *Bot, msg *tgbotapi.Message) {
-	rev := os.Getenv("REVISION")
-	if len(rev) == 0 {
+func correctEnglish(b *Bot, msg *tgbotapi.Message) {
+	text := strings.TrimSpace(msg.CommandArguments())
+	if len(text) == 0 {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Пустой входной вопрос")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
 		return
 	}
-	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, rev)
-	msgConfig.ReplyToMessageID = msg.MessageID
-	b.sendMessage(msgConfig)
-}
-
-func correctEnglish(b *Bot, msg *tgbotapi.Message) {
-	ans, err := b.OpenaiAPI.CallGPTforEng(msg.CommandArguments())
+	ans, err := b.OpenaiAPI.CallGPTforEng(text)
 	if err != nil || len(ans) == 0 {
 		slog.Error("error occured while call openai", "err", err)
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
@@ -194,20 +226,46 @@ func correctEnglish(b *Bot, msg *tgbotapi.Message) {
 	b.sendMessage(msgConfig)
 }
 
-func whoAmI(b *Bot, msg *tgbotapi.Message) {
-	if !msg.Chat.IsPrivate() && !msg.Chat.IsGroup() {
+func translateEng2Ru(b *Bot, msg *tgbotapi.Message) {
+	text := strings.TrimSpace(msg.CommandArguments())
+	if len(text) == 0 {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Пустой входной вопрос")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
 		return
 	}
-	chatId := msg.Chat.ID
-	userId := msg.From.ID
-	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("ChatID: %d\nUserID: %d", chatId, userId))
+	ans, err := b.OpenaiAPI.CallGPTEng2Ru(text)
+	if err != nil || len(ans) == 0 {
+		slog.Error("error occured while call openai", "err", err)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, ans)
+	msgConfig.ReplyToMessageID = msg.MessageID
 	b.sendMessage(msgConfig)
 }
 
-func mourningDebug(b *Bot, msg *tgbotapi.Message) {
-	text := b.mourningDigest()
-	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, text)
-	msgConfig.ParseMode = tgbotapi.ModeMarkdownV2
-	msgConfig.DisableWebPagePreview = true
+func translateRu2Eng(b *Bot, msg *tgbotapi.Message) {
+	text := strings.TrimSpace(msg.CommandArguments())
+	if len(text) == 0 {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Пустой входной вопрос")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+	ans, err := b.OpenaiAPI.CallGPTRu2Eng(text)
+	if err != nil || len(ans) == 0 {
+		slog.Error("error occured while call openai", "err", err)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, ans)
+	msgConfig.ReplyToMessageID = msg.MessageID
 	b.sendMessage(msgConfig)
 }

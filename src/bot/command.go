@@ -16,31 +16,6 @@ var Commands = map[string]Command{
 		Description: "Провекра связи.",
 		Handler:     ping,
 	},
-	"/weather": {
-		Name:        "/weather",
-		Description: "Прогноз погоды в заданных городах.",
-		Handler:     getCurrentWeather,
-	},
-	"/gpt": {
-		Name:        "/gpt",
-		Description: "Спросить ChatGPT.",
-		Handler:     askChatGPT,
-	},
-	"/revision": {
-		Name:        "/revision",
-		Description: "Версия бота.",
-		Handler:     getRevision,
-	},
-	"/eng": {
-		Name:        "/eng",
-		Description: "Проверить и поправить грамматику в английском тексте.",
-		Handler:     correctEnglish,
-	},
-	"/new": {
-		Name:        "/new",
-		Description: "Сбросить контекст в работе с ChatGPT.",
-		Handler:     newChatGPT,
-	},
 	"/whoami": {
 		Name:        "/whoami",
 		Description: "Возвращает chat_id и user_id",
@@ -49,6 +24,41 @@ var Commands = map[string]Command{
 	"/mourning": {
 		Name:        "/mourning",
 		Description: "Debug mourning job",
-		Handler:     mourningDebug,
+		Handler:     sendMourningDigest,
+	},
+	"/revision": {
+		Name:        "/revision",
+		Description: "Версия бота.",
+		Handler:     getRevision,
+	},
+	"/weather": {
+		Name:        "/weather",
+		Description: "Прогноз погоды в заданных городах.",
+		Handler:     getCurrentWeather,
+	},
+	"/new": {
+		Name:        "/new",
+		Description: "Сбросить контекст в работе с ChatGPT.",
+		Handler:     newChatGPT,
+	},
+	"/gpt": {
+		Name:        "/gpt",
+		Description: "Спросить ChatGPT.",
+		Handler:     askChatGPT,
+	},
+	"/check_eng": {
+		Name:        "/check_eng",
+		Description: "Проверить и поправить грамматику в английском тексте.",
+		Handler:     correctEnglish,
+	},
+	"/en2ru": {
+		Name:        "/en2ru",
+		Description: "Перевод с английского на русский.",
+		Handler:     translateEng2Ru,
+	},
+	"/ru2en": {
+		Name:        "/ru2en",
+		Description: "Перевод с русского на английский.",
+		Handler:     translateRu2Eng,
 	},
 }
