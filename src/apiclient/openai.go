@@ -90,7 +90,7 @@ func (o *OpenaiAPI) CallGPTEng2Ru(text string) (string, error) {
 }
 
 func (o *OpenaiAPI) CallGPTRu2Eng(text string) (string, error) {
-	prompt := "translate from russian to english: " + text
+	prompt := "переведи с русского на английский: " + text
 
 	if len(prompt) > MaxPromptSymbolSize {
 		return "Слишком длинный вопрос, попробуйте покороче", nil
