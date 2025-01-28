@@ -6,6 +6,8 @@ services:
     container_name: familybot
     ports:
       - '127.0.0.1:8080:8080'
+    labels:
+      - conf_version=1
     environment:
       - DEBUG
       - TZ=Europe/Helsinki
@@ -16,13 +18,14 @@ services:
       - WEATHERAPI_KEY
       - CURRENCYAPI_KEY
       - OPENAIAPI_KEY
-      - OPENAIAPI_GPTMODEL=gpt-4o
+      - OPENAIAPI_GPTMODEL=gpt-4o-mini
       - MINIFLUXAPI_KEY
       - MINIFLUXAPI_BASEURL=https://miniflux.rahfar.com
       - MINIFLUXAPI_SITEURL=https://www.nytimes.com
       - DEEPLAPI_KEY
       - REDIS_ADDR=redis:6379
       - ANTHROPICAPI_KEY
+      - ANTHROPICAPI_MODEL=claude-3-5-sonnet-latest
     restart: unless-stopped
     depends_on:
       - redis
