@@ -271,6 +271,9 @@ func (b *Bot) startWebAPI() {
 func (b *Bot) initCommands() (*tgbotapi.APIResponse, error) {
 	tgCommands := make([]tgbotapi.BotCommand, 0, len(b.Commands))
 	for _, cmd := range b.Commands {
+		if cmd.Hidden {
+			continue
+		}
 		tgCommands = append(tgCommands, tgbotapi.BotCommand{
 			Command:     cmd.Name,
 			Description: cmd.Description,

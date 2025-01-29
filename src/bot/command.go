@@ -8,6 +8,7 @@ type Command struct {
 	Name        string
 	Description string
 	Handler     func(*Bot, *tgbotapi.Message)
+	Hidden      bool
 }
 
 var Commands = map[string]Command{
@@ -15,21 +16,25 @@ var Commands = map[string]Command{
 		Name:        "/ping",
 		Description: "Провекра связи.",
 		Handler:     ping,
+		Hidden:      true,
 	},
 	"/whoami": {
 		Name:        "/whoami",
 		Description: "Возвращает chat_id и user_id",
 		Handler:     whoAmI,
+		Hidden:      true,
 	},
 	"/mourning": {
 		Name:        "/mourning",
 		Description: "Debug mourning job",
 		Handler:     sendMourningDigest,
+		Hidden:      true,
 	},
 	"/revision": {
 		Name:        "/revision",
 		Description: "Версия бота.",
 		Handler:     getRevision,
+		Hidden:      true,
 	},
 	"/weather": {
 		Name:        "/weather",
