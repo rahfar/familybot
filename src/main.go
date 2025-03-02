@@ -78,15 +78,18 @@ func ConvertCommaSeparatedStringToInt64Slice(input string) ([]int64, error) {
 	return intSlice, nil
 }
 
-func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true}))
-	slog.SetDefault(logger)
-	tgbotapi.SetLogger(log.Default())
-
+func main() {	
 	if _, err := flags.Parse(&opts); err != nil {
 		slog.Error("Error parsing options")
 		panic(err)
 	}
+	logLevel := slog.LevelInfo
+	if opts.Dbg {
+		logLevel = slog.LevelDebug
+	}
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: logLevel}))
+	slog.SetDefault(logger)
+	tgbotapi.SetLogger(log.Default())
 
 	bot_api, err := tgbotapi.NewBotAPI(opts.Telegram.Token)
 	if err != nil {

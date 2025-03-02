@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -65,6 +66,8 @@ func (b *Bot) Run() {
 }
 
 func (b *Bot) onMessage(msg tgbotapi.Message) {
+	slog.Debug("received message", "msg", msg)
+	
 	cmd, exists := b.Commands["/"+msg.Command()]
 
 	if exists {
@@ -185,17 +188,10 @@ func (b *Bot) isMessageFromAllowedChat(update tgbotapi.Update) bool {
 	if update.Message.Chat.ID == b.GroupID {
 		return true
 	}
-	for _, un := range b.AllowedUsernames {
-		if un == update.Message.Chat.UserName {
-			return true
-		}
+	if slices.Contains(b.AllowedUsernames, update.Message.Chat.UserName) {
+		return true
 	}
-	for _, un := range b.AllowedChats {
-		if un == update.Message.Chat.ID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(b.AllowedChats, update.Message.Chat.ID)
 }
 
 func (b *Bot) sendMessage(msg tgbotapi.MessageConfig) {
@@ -214,12 +210,9 @@ func (b *Bot) sendMessage(msg tgbotapi.MessageConfig) {
 
 	msgParts := (msgLength + maxMsgLength - 1) / maxMsgLength // Ceiling division
 
-	for i := 0; i < msgParts; i++ {
+	for i := range msgParts {
 		start := i * maxMsgLength
-		end := (i + 1) * maxMsgLength
-		if end > msgLength {
-			end = msgLength
-		}
+		end := min((i+1)*maxMsgLength, msgLength)
 
 		msg.Text = strings.ToValidUTF8(msgText[start:end], "")
 
