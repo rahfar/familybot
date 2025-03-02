@@ -26,7 +26,6 @@ type Bot struct {
 	AllowedUsernames []string
 	AllowedChats     []int64
 	GroupID          int64
-	Commands         map[string]Command
 	AskGPTCache      *expirable.LRU[string, []apiclient.GPTResponse]
 	TGBotAPI         *tgbotapi.BotAPI
 	ExchangeAPI      *apiclient.ExchangeAPI
@@ -67,22 +66,26 @@ func (b *Bot) Run() {
 
 func (b *Bot) onMessage(msg tgbotapi.Message) {
 	slog.Debug("received message", "msg", msg)
-	
-	cmd, exists := b.Commands["/"+msg.Command()]
+
+	cmd, exists := Commands["/"+msg.Command()]
 
 	if exists {
+		slog.Debug("command found", "command", msg.Command())
 		metrics.CommandCallsCaounter.With(prometheus.Labels{"command": cmd.Name}).Inc()
 		cmd.Handler(b, &msg)
 	} else if msg.Voice != nil {
+		slog.Debug("voice message", "voice", msg.Voice)
 		transcriptVoice(b, &msg)
 	} else if msg.Chat.IsPrivate() {
-		cmd, exists = b.Commands["/gpt"]
+		slog.Debug("private message", "msg", msg)
+		cmd, exists = Commands["/gpt"]
 		if !exists {
 			slog.Error("could not find command /gpt")
 			return
 		}
 		cmd.Handler(b, &msg)
 	} else {
+		slog.Info("unsupported command", "command", msg.Command())
 		return
 	}
 }
@@ -262,8 +265,8 @@ func (b *Bot) startWebAPI() {
 }
 
 func (b *Bot) initCommands() (*tgbotapi.APIResponse, error) {
-	tgCommands := make([]tgbotapi.BotCommand, 0, len(b.Commands))
-	for _, cmd := range b.Commands {
+	tgCommands := make([]tgbotapi.BotCommand, 0, len(Commands))
+	for _, cmd := range Commands {
 		if cmd.Hidden {
 			continue
 		}

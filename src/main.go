@@ -78,7 +78,7 @@ func ConvertCommaSeparatedStringToInt64Slice(input string) ([]int64, error) {
 	return intSlice, nil
 }
 
-func main() {	
+func main() {
 	if _, err := flags.Parse(&opts); err != nil {
 		slog.Error("Error parsing options")
 		panic(err)
@@ -132,7 +132,6 @@ func main() {
 		AllowedUsernames: strings.Split(opts.Telegram.AllowedUsernames, ","),
 		AllowedChats:     allowedchats,
 		GroupID:          opts.Telegram.GroupID,
-		Commands:         bot.Commands,
 		AskGPTCache:      expirable.NewLRU[string, []apiclient.GPTResponse](1000, nil, time.Minute*30),
 		ExchangeAPI:      exchangeAPI,
 		OpenaiAPI:        openaiAPI,
