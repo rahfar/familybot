@@ -65,7 +65,7 @@ func (b *Bot) Run() {
 }
 
 func (b *Bot) onMessage(msg tgbotapi.Message) {
-	slog.Debug("received message", "msg", msg)
+	slog.Debug("received message", "message", msg)
 
 	cmd, exists := Commands["/"+msg.Command()]
 
@@ -74,10 +74,10 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 		metrics.CommandCallsCaounter.With(prometheus.Labels{"command": cmd.Name}).Inc()
 		cmd.Handler(b, &msg)
 	} else if msg.Voice != nil {
-		slog.Debug("voice message", "voice", msg.Voice)
+		slog.Debug("voice message")
 		transcriptVoice(b, &msg)
 	} else if msg.Chat.IsPrivate() {
-		slog.Debug("private message", "msg", msg)
+		slog.Debug("private message")
 		cmd, exists = Commands["/gpt"]
 		if !exists {
 			slog.Error("could not find command /gpt")
@@ -85,7 +85,7 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 		}
 		cmd.Handler(b, &msg)
 	} else {
-		slog.Info("unsupported command", "command", msg.Command())
+		slog.Info("unsupported command")
 		return
 	}
 }
