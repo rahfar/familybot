@@ -64,13 +64,22 @@ func (b *Bot) Run() {
 	}
 }
 
+func findCommand(msgText string) *Command {
+	for _, cmd := range Commands {
+		if strings.HasPrefix(msgText, cmd.Name) {
+			return &cmd
+		}
+	}
+	return nil
+}
+
 func (b *Bot) onMessage(msg tgbotapi.Message) {
 	slog.Debug("received message", "message", msg)
 
-	cmd, exists := Commands["/"+msg.Command()]
+	cmd := findCommand(msg.Text)
 
-	if exists {
-		slog.Debug("command found", "command", msg.Command())
+	if cmd != nil {
+		slog.Debug("command found", "command", cmd.Name)
 		metrics.CommandCallsCaounter.With(prometheus.Labels{"command": cmd.Name}).Inc()
 		cmd.Handler(b, &msg)
 	} else if msg.Voice != nil {
@@ -78,7 +87,7 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 		transcriptVoice(b, &msg)
 	} else if msg.Chat.IsPrivate() {
 		slog.Debug("private message")
-		cmd, exists = Commands["/gpt"]
+		cmd, exists := Commands["/gpt"]
 		if !exists {
 			slog.Error("could not find command /gpt")
 			return

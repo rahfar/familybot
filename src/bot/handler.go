@@ -92,17 +92,29 @@ func sendMourningDigest(b *Bot, msg *tgbotapi.Message) {
 
 func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 	var question string
+
 	if msg.IsCommand() {
 		question = strings.TrimSpace(msg.CommandArguments())
+	} else if strings.HasPrefix(msg.Text, "/gpt@") {
+		words := strings.SplitN(msg.Text, " ", 2)
+		if len(words) == 2 {
+			question = strings.TrimSpace(words[1])
+		}
+
+	} else if strings.HasPrefix(msg.Text, "/gpt") {
+		question = strings.TrimSpace(msg.Text[len("/gpt"):])
 	} else {
 		question = strings.TrimSpace(msg.Text)
 	}
+
 	if len(question) == 0 {
+		slog.Debug("empty question")
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Пустой входной вопрос")
 		msgConfig.ReplyToMessageID = msg.MessageID
 		b.sendMessage(msgConfig)
 		return
 	}
+	slog.Debug("askChatGPT", "question", question)
 
 	responseHistory, ok := b.AskGPTCache.Get(strconv.FormatInt(msg.Chat.ID, 10))
 	if !ok {
