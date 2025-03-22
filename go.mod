@@ -1,14 +1,14 @@
 module github.com/rahfar/familybot
 
-go 1.22.1
+go 1.24.1
 
 require (
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/jessevdk/go-flags v1.6.1
-	github.com/prometheus/client_golang v1.21.0
-	github.com/redis/go-redis/v9 v9.7.1
-	github.com/sashabaranov/go-openai v1.38.0
+	github.com/prometheus/client_golang v1.21.1
+	github.com/redis/go-redis/v9 v9.7.3
+	github.com/sashabaranov/go-openai v1.38.1
 	miniflux.app v1.0.46
 )
 
@@ -19,8 +19,8 @@ require (
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.62.0 // indirect
-	github.com/prometheus/procfs v0.15.1 // indirect
-	golang.org/x/sys v0.30.0 // indirect
+	github.com/prometheus/common v0.63.0 // indirect
+	github.com/prometheus/procfs v0.16.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
 )
