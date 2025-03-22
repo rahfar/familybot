@@ -101,7 +101,7 @@ func (o *OpenaiAPI) CallGPTRu2Eng(text string) (string, error) {
 	return o.callChatCompletion(messages)
 }
 
-func (o *OpenaiAPI) CallWhisper(filePath string) (string, error) {
+func (o *OpenaiAPI) CallTranscriptionEndpoint(filePath string) (string, error) {
 	const maxRetry = 3
 
 	c := openai.NewClient(o.ApiKey)
@@ -109,8 +109,9 @@ func (o *OpenaiAPI) CallWhisper(filePath string) (string, error) {
 
 	for i := 1; i <= maxRetry; i++ {
 		req := openai.AudioRequest{
-			Model:    openai.Whisper1,
+			Model:    "gpt-4o-transcribe",
 			FilePath: filePath,
+			Format:   openai.AudioResponseFormatJSON,
 		}
 		resp, err := c.CreateTranscription(ctx, req)
 		if err == nil {

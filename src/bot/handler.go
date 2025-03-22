@@ -203,7 +203,7 @@ func transcriptVoice(b *Bot, msg *tgbotapi.Message) {
 		return
 	}
 
-	text, err := b.OpenaiAPI.CallWhisper(filename)
+	text, err := b.OpenaiAPI.CallTranscriptionEndpoint(filename)
 	if err != nil {
 		slog.Error("getting voice msg", "err", err)
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при обработки голосового сообщения")
