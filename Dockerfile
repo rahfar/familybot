@@ -11,7 +11,7 @@ ARG REVISION=unknown
 ENV REVISION=${REVISION}
 
 WORKDIR /app
-RUN apk update && apk add tzdata
+RUN apk update && apk add tzdata ffmpeg
 COPY --from=build /build/main ./
 COPY configs/weatherapi_config.json /app/weatherapi_config.json
 

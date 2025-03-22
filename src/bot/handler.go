@@ -172,6 +172,7 @@ func transcriptVoice(b *Bot, msg *tgbotapi.Message) {
 	}
 	filename := "/tmp/" + msg.Voice.FileID + path.Ext(link)
 	slog.Debug("saving audio", "filename", filename)
+
 	// Download audio file
 	resp, err := http.Get(link)
 	if err != nil {
@@ -203,7 +204,18 @@ func transcriptVoice(b *Bot, msg *tgbotapi.Message) {
 		return
 	}
 
-	text, err := b.OpenaiAPI.CallTranscriptionEndpoint(filename)
+	// Convert the audio file to mp3
+	mp3Filename := filename + ".mp3"
+	err = convertOgaToMp3(filename, mp3Filename)
+	if err != nil {
+		slog.Error("converting voice msg", "err", err)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при обработки голосового сообщения")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	text, err := b.OpenaiAPI.CallTranscriptionEndpoint(mp3Filename)
 	if err != nil {
 		slog.Error("getting voice msg", "err", err)
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при обработки голосового сообщения")
