@@ -214,6 +214,7 @@ func transcriptVoice(b *Bot, msg *tgbotapi.Message) {
 		b.sendMessage(msgConfig)
 		return
 	}
+	defer os.Remove(mp3Filename)
 
 	text, err := b.OpenaiAPI.CallTranscriptionEndpoint(mp3Filename)
 	if err != nil {
