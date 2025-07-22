@@ -49,12 +49,9 @@ jobs:
         with:
           to: ${{ env.TG_NOTIFICATION_BOT_CHATID }}
           token: ${{ env.TG_NOTIFICATION_BOT_TOKEN }}
+          format: markdown
+          disable_web_page_preview: true
           message: |
-            🚀 Deployment Status: ${{ job.status }}
-            Repository: ${{ github.repository }}
-            Branch: ${{ github.ref_name }}
-            Commit: ${{ github.sha }}
-            Workflow: ${{ gitea.workflow }}
-            Run: ${{ gitea.server_url }}/${{ gitea.repository }}/actions/runs/${{ gitea.run_number }}
-
-            ${{ job.status == 'success' && '✅ Deployment completed successfully!' || '❌ Deployment failed!' }}
+            *${{ gitea.workflow }}* workflow [run](${{ gitea.server_url }}/${{ gitea.repository }}/actions/runs/${{ gitea.run_number }}): ${{ job.status == 'success' && '✅' || '❌' }}
+            repository: *${{ github.repository }}*
+            branch: *${{ github.ref_name }}*
