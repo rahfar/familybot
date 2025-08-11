@@ -18,14 +18,11 @@ services:
       - WEATHERAPI_KEY
       - CURRENCYAPI_KEY
       - OPENAIAPI_KEY
-      - OPENAIAPI_GPTMODEL=gpt-4o-mini
+      - OPENAIAPI_GPTMODEL=gpt-5-nano
       - MINIFLUXAPI_KEY
       - MINIFLUXAPI_BASEURL=https://miniflux.rahfar.com
       - MINIFLUXAPI_SITEURL=https://www.nytimes.com
-      - DEEPLAPI_KEY
       - REDIS_ADDR=redis:6379
-      - ANTHROPICAPI_KEY
-      - ANTHROPICAPI_MODEL=claude-sonnet-4-20250514
     restart: unless-stopped
     depends_on:
       - redis

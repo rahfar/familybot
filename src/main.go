@@ -35,14 +35,8 @@ var opts struct {
 	} `group:"currencyapi" namespace:"currencyapi" env-namespace:"CURRENCYAPI"`
 	OpenaiAPI struct {
 		Key      string `long:"key" env:"KEY"`
-		GPTModel string `long:"gptmodel" env:"GPTMODEL" default:"gpt-3.5-turbo"`
+		GPTModel string `long:"gptmodel" env:"GPTMODEL" default:"gpt-5-nano"`
 	} `group:"openaiapi" namespace:"openaiapi" env-namespace:"OPENAIAPI"`
-	AnthropicAPI struct {
-		Key        string `long:"key" env:"KEY"`
-		Model      string `long:"model" env:"MODEL" default:"claude-3-5-sonnet-latest"`
-		ApiVersion string `long:"apiversion" env:"APIVERSION" default:"2023-06-01"`
-		MaxTokens  int    `long:"maxtokens" env:"MAXTOKENS" default:"1024"`
-	} `group:"anthropicapi" namespace:"anthropicapi" env-namespace:"ANTHROPICAPI"`
 	MinifluxAPI struct {
 		Key     string `long:"key" env:"KEY"`
 		BaseURL string `long:"baseurl" env:"BASEURL"`
@@ -109,14 +103,6 @@ func main() {
 	deeplAPI := &apiclient.DeeplAPI{HttpClient: httpClient, RedisClient: redisClient, ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
 	minifluxAPI := &apiclient.MinifluxAPI{ApiKey: opts.MinifluxAPI.Key, BaseURL: opts.MinifluxAPI.BaseURL, SiteURL: opts.MinifluxAPI.SiteURL}
 	weatherAPI := apiclient.NewWeatherAPI(opts.WeatherAPI.Key, opts.WeatherAPI.ConfigFile, httpClient, redisClient)
-	anthropicAPI := &apiclient.AnthropicAPI{
-		ApiKey:      opts.AnthropicAPI.Key,
-		HttpClient:  httpClient,
-		RedisClient: redisClient,
-		Model:       opts.AnthropicAPI.Model,
-		ApiVersion:  opts.AnthropicAPI.ApiVersion,
-		MaxTokens:   opts.AnthropicAPI.MaxTokens,
-	}
 
 	allowedchats, err := ConvertCommaSeparatedStringToInt64Slice(opts.Telegram.AllowedChats)
 	if err != nil {
@@ -139,7 +125,6 @@ func main() {
 		TGBotAPI:         bot_api,
 		MinifluxAPI:      minifluxAPI,
 		DeeplAPI:         deeplAPI,
-		AnthropicAPI:     anthropicAPI,
 	}
 	b.Run()
 }
