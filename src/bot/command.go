@@ -51,6 +51,7 @@ var Commands = map[string]Command{
 		Name:        "/gpt",
 		Description: "Спросить ChatGPT.",
 		Handler:     askChatGPT,
+		Hidden:      true,
 	},
 	"/fix": {
 		Name:        "/fix",
