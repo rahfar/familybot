@@ -122,7 +122,7 @@ func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 	}
 	responseHistory = filterOldGPTResponce(responseHistory)
 
-	ans, err := b.OpenaiAPI.CallGPT(question, responseHistory)
+	ans, err := b.OpenaiAPI.GenerateChatCompletion(question, responseHistory)
 	if err != nil || len(ans) == 0 {
 		slog.Error("error occured while call openai", "err", err)
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
@@ -216,7 +216,7 @@ func transcriptVoice(b *Bot, msg *tgbotapi.Message) {
 	}
 	defer os.Remove(mp3Filename)
 
-	text, err := b.OpenaiAPI.CallTranscriptionEndpoint(mp3Filename)
+	text, err := b.OpenaiAPI.TranscribeAudioFile(mp3Filename)
 	if err != nil {
 		slog.Error("getting voice msg", "err", err)
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при обработки голосового сообщения")
@@ -237,7 +237,7 @@ func correctEnglish(b *Bot, msg *tgbotapi.Message) {
 		b.sendMessage(msgConfig)
 		return
 	}
-	ans, err := b.OpenaiAPI.CallGPTforEng(text)
+	ans, err := b.OpenaiAPI.CorrectGrammarAndStyle(text)
 	if err != nil || len(ans) == 0 {
 		slog.Error("error occured while call openai", "err", err)
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
@@ -259,7 +259,7 @@ func translateEng2Ru(b *Bot, msg *tgbotapi.Message) {
 		b.sendMessage(msgConfig)
 		return
 	}
-	ans, err := b.OpenaiAPI.CallGPTEng2Ru(text)
+	ans, err := b.OpenaiAPI.TranslateEnglishToRussian(text)
 	if err != nil || len(ans) == 0 {
 		slog.Error("error occured while call openai", "err", err)
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
@@ -281,7 +281,7 @@ func translateRu2Eng(b *Bot, msg *tgbotapi.Message) {
 		b.sendMessage(msgConfig)
 		return
 	}
-	ans, err := b.OpenaiAPI.CallGPTRu2Eng(text)
+	ans, err := b.OpenaiAPI.TranslateRussianToEnglish(text)
 	if err != nil || len(ans) == 0 {
 		slog.Error("error occured while call openai", "err", err)
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
