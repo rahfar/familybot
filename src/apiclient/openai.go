@@ -54,10 +54,11 @@ func (o *OpenaiAPI) CallGPT(question string, responseHistory []GPTResponse) (str
 		return "Слишком длинный вопрос, попробуйте покороче", nil
 	}
 
-	messages := make([]openai.ChatCompletionMessage, len(responseHistory)+1)
+	messages := make([]openai.ChatCompletionMessage, 0)
 	for _, v := range responseHistory {
 		messages = append(messages, openai.ChatCompletionMessage{Role: v.Role, Content: v.Content})
 	}
+
 	messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: question})
 	return o.callChatCompletion(messages)
 }
