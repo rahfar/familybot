@@ -40,6 +40,7 @@ var Commands = map[string]Command{
 		Name:        "/weather",
 		Description: "Прогноз погоды в заданных городах.",
 		Handler:     getCurrentWeather,
+		Hidden:      true,
 	},
 	"/new": {
 		Name:        "/new",
@@ -51,19 +52,22 @@ var Commands = map[string]Command{
 		Description: "Спросить ChatGPT.",
 		Handler:     askChatGPT,
 	},
-	"/check_eng": {
-		Name:        "/check_eng",
+	"/fix": {
+		Name:        "/fix",
 		Description: "Проверить и поправить грамматику в английском тексте.",
 		Handler:     correctEnglish,
+		Hidden:      true,
 	},
 	"/en2ru": {
 		Name:        "/en2ru",
 		Description: "Перевод с английского на русский.",
 		Handler:     translateEng2Ru,
+		Hidden:      true,
 	},
 	"/ru2en": {
 		Name:        "/ru2en",
 		Description: "Перевод с русского на английский.",
 		Handler:     translateRu2Eng,
+		Hidden:      true,
 	},
 }
