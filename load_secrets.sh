@@ -24,5 +24,6 @@ export WEATHERAPI_KEY=$(bws secret get 627efa5d-6fdb-48bd-8956-b041013fcdab | jq
 export CURRENCYAPI_KEY=$(bws secret get 3cdeba53-2ee5-49c6-9956-b041013fe498 | jq -r .value)
 export OPENAIAPI_KEY=$(bws secret get 645021f0-b0eb-41af-9aa9-b041013ff1a5 | jq -r .value)
 export MINIFLUXAPI_KEY=$(bws secret get 457ec119-e932-4cbd-8ad2-b0ef00e47798 | jq -r .value)
+export DEEPLAPI_KEY=$(bws secret get 0d11a328-87b9-4ade-837b-b0ef00e4baff | jq -r .value)
 
 echo "Done"

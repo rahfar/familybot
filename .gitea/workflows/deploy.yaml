@@ -25,6 +25,7 @@ jobs:
             3cdeba53-2ee5-49c6-9956-b041013fe498 > CURRENCYAPI_KEY
             645021f0-b0eb-41af-9aa9-b041013ff1a5 > OPENAIAPI_KEY
             457ec119-e932-4cbd-8ad2-b0ef00e47798 > MINIFLUXAPI_KEY
+            0d11a328-87b9-4ade-837b-b0ef00e4baff > DEEPLAPI_KEY
             c9927e64-9dfb-49df-9dec-b1f50144f046 > TG_NOTIFICATION_BOT_TOKEN
             dfdace6a-de7f-4d62-b995-b1f5014bf00b > TG_NOTIFICATION_BOT_CHATID
             2af121a5-3856-4e27-9b65-b222006e7d15 > ANTHROPICAPI_KEY
@@ -34,7 +35,7 @@ jobs:
           host: ${{ secrets.TARGET_HOST }}
           username: ${{ secrets.TARGET_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          envs: TG_TOKEN,TG_GROUP,TG_ALLOWEDUSERNAMES,TG_ALLOWEDCHATS,WEATHERAPI_KEY,CURRENCYAPI_KEY,OPENAIAPI_KEY,MINIFLUXAPI_KEY,ANTHROPICAPI_KEY,DEBUG
+          envs: TG_TOKEN,TG_GROUP,TG_ALLOWEDUSERNAMES,TG_ALLOWEDCHATS,WEATHERAPI_KEY,CURRENCYAPI_KEY,OPENAIAPI_KEY,DEEPLAPI_KEY,MINIFLUXAPI_KEY,ANTHROPICAPI_KEY,DEBUG
           script: |
             cd ~/familybot &&
             git fetch --all &&
