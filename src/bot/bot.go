@@ -174,14 +174,14 @@ func (b *Bot) mourningDigest() string {
 			}
 			translatedTitle = tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, translatedTitle)
 			escaped_url := tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, n.URL)
-			fmt_news += fmt.Sprintf("%d\\. [%s](%s)\n", i+1, translatedTitle, escaped_url)
+			fmt_news += fmt.Sprintf("%d\\. [%s](%s)\n", i, translatedTitle, escaped_url)
 			i++
 		}
 		fmt_news += "ТАСС\n"
 		for _, n := range tass_news {
 			title := tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, n.Title)
 			escaped_url := tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, n.URL)
-			fmt_news += fmt.Sprintf("%d\\. [%s](%s)\n", i+1, title, escaped_url)
+			fmt_news += fmt.Sprintf("%d\\. [%s](%s)\n", i, title, escaped_url)
 			i++
 		}
 		text += fmt_news
