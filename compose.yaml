@@ -22,7 +22,6 @@ services:
       - DEEPLAPI_KEY
       - MINIFLUXAPI_KEY
       - MINIFLUXAPI_BASEURL=https://miniflux.rahfar.com
-      - MINIFLUXAPI_SITEURL=https://www.nytimes.com
       - REDIS_ADDR=redis:6379
     restart: unless-stopped
     depends_on:

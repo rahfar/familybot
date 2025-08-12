@@ -40,7 +40,6 @@ var opts struct {
 	MinifluxAPI struct {
 		Key     string `long:"key" env:"KEY"`
 		BaseURL string `long:"baseurl" env:"BASEURL"`
-		SiteURL string `long:"siteurl" env:"SITEURL"`
 	} `group:"minifluxapi" namespace:"minifluxapi" env-namespace:"MINIFLUXAPI"`
 	DeeplAPI struct {
 		Key     string `long:"key" env:"KEY"`
@@ -101,7 +100,7 @@ func main() {
 	exchangeAPI := &apiclient.ExchangeAPI{ApiKey: opts.CurrencyAPI.Key, RedisClient: redisClient, HttpClient: httpClient}
 	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: httpClient, GPTModel: opts.OpenaiAPI.GPTModel}
 	deeplAPI := &apiclient.DeeplAPI{HttpClient: httpClient, RedisClient: redisClient, ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
-	minifluxAPI := &apiclient.MinifluxAPI{ApiKey: opts.MinifluxAPI.Key, BaseURL: opts.MinifluxAPI.BaseURL, SiteURL: opts.MinifluxAPI.SiteURL}
+	minifluxAPI := &apiclient.MinifluxAPI{ApiKey: opts.MinifluxAPI.Key, BaseURL: opts.MinifluxAPI.BaseURL}
 	weatherAPI := apiclient.NewWeatherAPI(opts.WeatherAPI.Key, opts.WeatherAPI.ConfigFile, httpClient, redisClient)
 
 	allowedchats, err := ConvertCommaSeparatedStringToInt64Slice(opts.Telegram.AllowedChats)

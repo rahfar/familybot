@@ -159,13 +159,14 @@ func (b *Bot) mourningDigest() string {
 		}
 	}
 
-	// call news api
-	news, err := b.MinifluxAPI.GetLatestNews(3)
-	if (err != nil) || (len(news) == 0) {
-		slog.Error("error calling news api", "err", err)
+	nt_news, nt_err := b.MinifluxAPI.GetLatestNews("https://www.nytimes.com", 3)
+	tass_news, tass_err := b.MinifluxAPI.GetLatestNews("https://tass.ru", 2)
+	if (nt_err != nil) || (len(nt_news) == 0) || (tass_err != nil) || (len(tass_news) == 0) {
+		slog.Error("error calling news api", "err", nt_err, "tass_err", tass_err)
 	} else {
-		fmt_news := "\n_Последние новости:_\n"
-		for i, n := range news {
+		fmt_news := "\n_Последние новости:_\nNew York Times\n"
+		i := 1
+		for _, n := range nt_news {
 			translatedTitle, err := b.DeeplAPI.CallDeeplAPI([]string{n.Title})
 			if err != nil {
 				slog.Error("error calling deepl api", "err", err)
@@ -174,6 +175,14 @@ func (b *Bot) mourningDigest() string {
 			translatedTitle = tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, translatedTitle)
 			escaped_url := tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, n.URL)
 			fmt_news += fmt.Sprintf("%d\\. [%s](%s)\n", i+1, translatedTitle, escaped_url)
+			i++
+		}
+		fmt_news += "ТАСС\n"
+		for _, n := range tass_news {
+			title := tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, n.Title)
+			escaped_url := tgbotapi.EscapeText(tgbotapi.ModeMarkdownV2, n.URL)
+			fmt_news += fmt.Sprintf("%d\\. [%s](%s)\n", i+1, title, escaped_url)
+			i++
 		}
 		text += fmt_news
 	}
