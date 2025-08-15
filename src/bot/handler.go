@@ -294,3 +294,22 @@ func translateRu2Eng(b *Bot, msg *tgbotapi.Message) {
 	msgConfig.ReplyToMessageID = msg.MessageID
 	b.sendMessage(msgConfig)
 }
+
+func listCommands(b *Bot, msg *tgbotapi.Message) {
+	var text string
+	for _, cmd := range Commands {
+		text += fmt.Sprintf("%s - %s\n", cmd.Name, cmd.Description)
+	}
+	if len(text) == 0 {
+		text = "Нет доступных команд."
+	}
+
+	text = strings.TrimSpace(text)
+	if len(text) == 0 {
+		return
+	}
+
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, text)
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
+}

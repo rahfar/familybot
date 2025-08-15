@@ -72,3 +72,13 @@ var Commands = map[string]Command{
 		Hidden:      true,
 	},
 }
+
+// Register commands that reference Commands itself in init to avoid initialization cycle.
+func AddListCommand() {
+	Commands["/list"] = Command{
+		Name:        "/list",
+		Description: "Список доступных команд.",
+		Handler:     listCommands,
+		Hidden:      true,
+	}
+}
