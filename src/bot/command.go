@@ -79,6 +79,6 @@ func AddListCommand() {
 		Name:        "/list",
 		Description: "Список доступных команд.",
 		Handler:     listCommands,
-		Hidden:      true,
+		Hidden:      false,
 	}
 }
