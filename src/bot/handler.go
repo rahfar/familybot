@@ -120,7 +120,8 @@ func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 	if !ok {
 		responseHistory = make([]apiclient.GPTResponse, 0)
 	}
-	responseHistory = filterOldGPTResponce(responseHistory)
+	// DISABLED auto cleanup old messages
+	// responseHistory = filterOldGPTResponce(responseHistory)
 
 	ans, err := b.OpenaiAPI.GenerateChatCompletion(question, responseHistory)
 	if err != nil || len(ans) == 0 {
