@@ -19,20 +19,22 @@ type GPTResponse struct {
 type OpenaiAPI struct {
 	ApiKey     string
 	HttpClient *http.Client
-	GPTModel   string
 }
 
 const MaxPromptSymbolSize = 4096
 
-func (o *OpenaiAPI) requestChatCompletion(messages []openai.ChatCompletionMessage) (string, error) {
+func (o *OpenaiAPI) requestChatCompletion(messages []openai.ChatCompletionMessage, model string) (string, error) {
 	const maxRetry = 3
-
+	const defaultModel = "gpt-5-mini"
+	if model == "" {
+		model = defaultModel
+	}
 	for i := 1; i <= maxRetry; i++ {
 		client := openai.NewClient(o.ApiKey)
 		resp, err := client.CreateChatCompletion(
 			context.Background(),
 			openai.ChatCompletionRequest{
-				Model:    o.GPTModel,
+				Model:    model,
 				Messages: messages,
 			},
 		)
@@ -60,7 +62,7 @@ func (o *OpenaiAPI) GenerateChatCompletion(question string, responseHistory []GP
 	}
 
 	messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: question})
-	return o.requestChatCompletion(messages)
+	return o.requestChatCompletion(messages, "gpt-5")
 }
 
 func (o *OpenaiAPI) CorrectGrammarAndStyle(text string) (string, error) {
@@ -77,7 +79,7 @@ func (o *OpenaiAPI) CorrectGrammarAndStyle(text string) (string, error) {
 		{Role: openai.ChatMessageRoleUser, Content: "Input: " + text},
 	}
 
-	return o.requestChatCompletion(messages)
+	return o.requestChatCompletion(messages, "gpt-5-nano")
 }
 
 func (o *OpenaiAPI) TranslateEnglishToRussian(text string) (string, error) {
@@ -89,7 +91,7 @@ func (o *OpenaiAPI) TranslateEnglishToRussian(text string) (string, error) {
 
 	messages := []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: prompt}}
 
-	return o.requestChatCompletion(messages)
+	return o.requestChatCompletion(messages, "gpt-5-nano")
 }
 
 func (o *OpenaiAPI) TranslateRussianToEnglish(text string) (string, error) {
@@ -101,7 +103,7 @@ func (o *OpenaiAPI) TranslateRussianToEnglish(text string) (string, error) {
 
 	messages := []openai.ChatCompletionMessage{{Role: openai.ChatMessageRoleUser, Content: prompt}}
 
-	return o.requestChatCompletion(messages)
+	return o.requestChatCompletion(messages, "gpt-5-nano")
 }
 
 func (o *OpenaiAPI) TranscribeAudioFile(filePath string) (string, error) {

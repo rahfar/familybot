@@ -18,7 +18,6 @@ services:
       - WEATHERAPI_KEY
       - CURRENCYAPI_KEY
       - OPENAIAPI_KEY
-      - OPENAIAPI_GPTMODEL=gpt-5-mini
       - DEEPLAPI_KEY
       - MINIFLUXAPI_KEY
       - MINIFLUXAPI_BASEURL=https://miniflux.rahfar.com

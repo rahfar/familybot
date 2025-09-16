@@ -143,7 +143,7 @@ func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 }
 
 func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.GPTResponse {
-	const DurationChatHistory = -10 * time.Minute
+	const DurationChatHistory = -24 * 60 * time.Minute
 
 	filtered := make([]apiclient.GPTResponse, 0)
 	for _, v := range responseHistory {

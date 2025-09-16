@@ -35,7 +35,6 @@ var opts struct {
 	} `group:"currencyapi" namespace:"currencyapi" env-namespace:"CURRENCYAPI"`
 	OpenaiAPI struct {
 		Key      string `long:"key" env:"KEY"`
-		GPTModel string `long:"gptmodel" env:"GPTMODEL" default:"gpt-5-nano"`
 	} `group:"openaiapi" namespace:"openaiapi" env-namespace:"OPENAIAPI"`
 	MinifluxAPI struct {
 		Key     string `long:"key" env:"KEY"`
@@ -98,7 +97,7 @@ func main() {
 	redisClient := redis.NewClient(&redis.Options{Addr: opts.RedisAddr})
 
 	exchangeAPI := &apiclient.ExchangeAPI{ApiKey: opts.CurrencyAPI.Key, RedisClient: redisClient, HttpClient: httpClient}
-	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: httpClient, GPTModel: opts.OpenaiAPI.GPTModel}
+	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: httpClient}
 	deeplAPI := &apiclient.DeeplAPI{HttpClient: httpClient, RedisClient: redisClient, ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
 	minifluxAPI := &apiclient.MinifluxAPI{ApiKey: opts.MinifluxAPI.Key, BaseURL: opts.MinifluxAPI.BaseURL}
 	weatherAPI := apiclient.NewWeatherAPI(opts.WeatherAPI.Key, opts.WeatherAPI.ConfigFile, httpClient, redisClient)
