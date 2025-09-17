@@ -1,6 +1,9 @@
 package bot
 
 import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log/slog"
@@ -320,5 +323,201 @@ func listCommands(b *Bot, msg *tgbotapi.Message) {
 
 	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, text)
 	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
+}
+
+func addUser(b *Bot, msg *tgbotapi.Message) {
+	if !b.isUserAdmin(msg.From.ID) {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "У вас нет прав для выполнения этой команды")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	chatIDStr := strings.TrimSpace(msg.CommandArguments())
+	if len(chatIDStr) == 0 {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Укажите chat ID для добавления")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	chatID, err := strconv.ParseInt(chatIDStr, 10, 64)
+	if err != nil {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Неверный формат chat ID")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	ctx := context.Background()
+	err = b.DBClient.AddChat(ctx, chatID)
+	if err != nil {
+		slog.Error("error adding chat", "err", err, "chat_id", chatID)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при добавлении чата")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("Чат %d добавлен в список авторизованных", chatID))
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
+}
+
+func removeUser(b *Bot, msg *tgbotapi.Message) {
+	if !b.isUserAdmin(msg.From.ID) {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "У вас нет прав для выполнения этой команды")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	chatIDStr := strings.TrimSpace(msg.CommandArguments())
+	if len(chatIDStr) == 0 {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Укажите chat ID для удаления")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	chatID, err := strconv.ParseInt(chatIDStr, 10, 64)
+	if err != nil {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Неверный формат chat ID")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	ctx := context.Background()
+	err = b.DBClient.RemoveChat(ctx, chatID)
+	if err != nil {
+		slog.Error("error removing chat", "err", err, "chat_id", chatID)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при удалении чата")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, fmt.Sprintf("Чат %d удален из списка авторизованных", chatID))
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
+}
+
+func listUsers(b *Bot, msg *tgbotapi.Message) {
+	if !b.isUserAdmin(msg.From.ID) {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "У вас нет прав для выполнения этой команды")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	ctx := context.Background()
+
+	// Get authorized chats
+	chats, err := b.DBClient.GetAuthorizedChats(ctx)
+	if err != nil {
+		slog.Error("error getting chats", "err", err)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при получении списка чатов")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	if len(chats) == 0 {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Список авторизованных чатов пуст")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	text := "Авторизованные чаты:\n"
+	for _, chat := range chats {
+		text += fmt.Sprintf("• %s\n", chat)
+	}
+
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, text)
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
+}
+
+func generateInvite(b *Bot, msg *tgbotapi.Message) {
+	if !b.isUserAdmin(msg.From.ID) {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "У вас нет прав для выполнения этой команды")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	bytes := make([]byte, 16)
+	if _, err := rand.Read(bytes); err != nil {
+		slog.Error("error generating random token", "err", err)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при генерации токена")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+	token := hex.EncodeToString(bytes)
+
+	ctx := context.Background()
+	err := b.DBClient.CreateInviteToken(ctx, token)
+	if err != nil {
+		slog.Error("error creating invite token", "err", err)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при создании токена")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	botUsername := b.TGBotAPI.Self.UserName
+	inviteLink := fmt.Sprintf("https://t.me/%s?start=%s", botUsername, token)
+
+	text := fmt.Sprintf("Ссылка для авторизации (действительна 24 часа):\n%s", inviteLink)
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, text)
+	msgConfig.ReplyToMessageID = msg.MessageID
+	b.sendMessage(msgConfig)
+}
+
+func handleStartCommand(b *Bot, msg *tgbotapi.Message) {
+	if !msg.Chat.IsPrivate() {
+		return
+	}
+
+	token := strings.TrimSpace(msg.CommandArguments())
+	if len(token) == 0 {
+		unauthorizedResponse := fmt.Sprintf(
+			"Добро пожаловать! Для получения доступа обратитесь к администратору. "+
+				"Chat ID: %d",
+			msg.Chat.ID,
+		)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, unauthorizedResponse)
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	ctx := context.Background()
+	valid, err := b.DBClient.ValidateInviteToken(ctx, token)
+	if err != nil {
+		slog.Error("error validating invite token", "err", err, "token", token)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при проверке токена")
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	if !valid {
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Неверный или истекший токен авторизации")
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	err = b.DBClient.AddChat(ctx, msg.Chat.ID)
+	if err != nil {
+		slog.Error("error adding chat via invite", "err", err, "chat_id", msg.Chat.ID)
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при авторизации")
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Авторизация успешна! Теперь у вас есть доступ к боту.")
 	b.sendMessage(msgConfig)
 }

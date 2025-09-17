@@ -46,12 +46,18 @@ A Go-based Telegram bot designed for family chat interactions with multiple API 
 - `/fix` - English grammar correction
 - `/en2ru` / `/ru2en` - Translation between English and Russian
 - `/list` - Show available commands
+- **Admin-only commands**:
+  - `/add <user_id>` - Add user to authorized list
+  - `/remove <user_id>` - Remove user from authorized list
+  - `/users` - List all authorized users
+  - `/invite` - Generate invite link for new users
 - Hidden admin commands: `/ping`, `/whoami`, `/revision`, `/mourning`
 
 ### Automated Features
 - **Morning Digest** (7 AM daily): Combines weather, currency rates, and news
 - **Voice Message Transcription**: Converts Telegram voice messages to text
-- **Access Control**: Username and chat ID based authorization
+- **Access Control**: Multi-tier authorization system with admin controls
+- **Invite System**: Generate temporary invite links for easy user onboarding
 
 ### API Integrations
 - **OpenAI**: GPT chat completions, audio transcription, text corrections
@@ -66,8 +72,7 @@ A Go-based Telegram bot designed for family chat interactions with multiple API 
 ```
 TG_TOKEN - Telegram bot token
 TG_GROUP - Main group chat ID for morning digest
-TG_ALLOWEDUSERNAMES - Comma-separated usernames
-TG_ALLOWEDCHATS - Comma-separated chat IDs
+TG_ADMINUSERIDS - Comma-separated admin user IDs
 WEATHERAPI_KEY - Weather service API key
 CURRENCYAPI_KEY - Currency service API key
 OPENAIAPI_KEY - OpenAI API key
@@ -103,7 +108,12 @@ docker-compose up -d
 - Message splitting for Telegram length limits
 
 ### Authentication & Security
-- Chat/username-based access control
+- **Multi-tier access control**:
+  - Admins (TG_ADMINUSERIDS): Full access to user management commands
+  - Authorized users (stored in Redis): Regular bot access
+  - Group chat (TG_GROUP): Always allowed for morning digest
+- **Invite system**: Temporary 24-hour tokens for secure user onboarding
+- **Redis-based user management**: Persistent storage of authorized users
 - No public access - family/private use only
 - API key management through environment variables
 - Private chat unauthorized access responses
@@ -111,7 +121,7 @@ docker-compose up -d
 ### Current TODO Items
 From `TODO.md`:
 - [ ] Add support for image input in GPT calls
-- [ ] Add admin commands to manage access to bot
+- [x] Add admin commands to manage access to bot (completed)
 
 ## Testing & Maintenance
 - Monitor via `/metrics` endpoint (Prometheus)

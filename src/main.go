@@ -21,10 +21,9 @@ import (
 
 var opts struct {
 	Telegram struct {
-		Token            string `long:"token" env:"TOKEN" description:"telegram bot token" default:"test"`
-		GroupID          int64  `long:"group" env:"GROUP" description:"group id"`
-		AllowedUsernames string `long:"allowedusernames" env:"ALLOWEDUSERNAMES" description:"list of usernames that will have access to the bot" default:""`
-		AllowedChats     string `long:"allowedchats" env:"ALLOWEDCHATS" description:"list of chats that will have access to the bot" default:""`
+		Token        string `long:"token" env:"TOKEN" description:"telegram bot token" default:"test"`
+		GroupID      int64  `long:"group" env:"GROUPID" description:"group id"`
+		AdminUserIDs string `long:"adminuserids" env:"ADMINUSERIDS" description:"comma-separated list of admin user IDs" default:""`
 	} `group:"telegram" namespace:"telegram" env-namespace:"TG"`
 	WeatherAPI struct {
 		Key        string `long:"key" env:"KEY"`
@@ -117,28 +116,28 @@ func main() {
 	}
 	weatherAPI := apiclient.NewWeatherAPI(opts.WeatherAPI.Key, opts.WeatherAPI.ConfigFile, httpClient, dbClient)
 
-	allowedchats, err := ConvertCommaSeparatedStringToInt64Slice(opts.Telegram.AllowedChats)
-
+	adminUserIDs, err := ConvertCommaSeparatedStringToInt64Slice(opts.Telegram.AdminUserIDs)
 	if err != nil {
-		slog.Error("Error parsing AllowedChats")
+		slog.Error("Error parsing AdminUserIDs")
 		panic(err)
 	}
 
 	b := bot.Bot{
-		Token:            opts.Telegram.Token,
-		Dbg:              opts.Dbg,
-		Host:             opts.Host,
-		Port:             opts.Port,
-		AllowedUsernames: strings.Split(opts.Telegram.AllowedUsernames, ","),
-		AllowedChats:     allowedchats,
-		GroupID:          opts.Telegram.GroupID,
-		AskGPTCache:      expirable.NewLRU[string, []apiclient.GPTResponse](1000, nil, time.Minute*30),
-		ExchangeAPI:      exchangeAPI,
-		OpenaiAPI:        openaiAPI,
-		WeatherAPI:       weatherAPI,
-		TGBotAPI:         bot_api,
-		MinifluxAPI:      minifluxAPI,
-		DeeplAPI:         deeplAPI,
+		Token:        opts.Telegram.Token,
+		Dbg:          opts.Dbg,
+		Host:         opts.Host,
+		Port:         opts.Port,
+		AdminUserIDs: adminUserIDs,
+		GroupID:      opts.Telegram.GroupID,
+		AskGPTCache:  expirable.NewLRU[string, []apiclient.GPTResponse](1000, nil, time.Minute*30),
+		ExchangeAPI:  exchangeAPI,
+		OpenaiAPI:    openaiAPI,
+		WeatherAPI:   weatherAPI,
+		TGBotAPI:     bot_api,
+		MinifluxAPI:  minifluxAPI,
+		DeeplAPI:     deeplAPI,
+		DBClient:     dbClient,
 	}
+
 	b.Run()
 }

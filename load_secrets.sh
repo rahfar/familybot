@@ -17,9 +17,8 @@ fi
 
 # Retrieve additional secrets and set corresponding environment variables
 export TG_TOKEN=$(bws secret get 7f42da1c-25ae-497a-89de-b041013fa10a | jq -r .value)
-export TG_GROUP=$(bws secret get 0a25642b-b877-4415-962b-b041013fb276 | jq -r .value)
-export TG_ALLOWEDUSERNAMES=$(bws secret get bc6f96c0-c7a9-4273-bac0-b041013fc1fa | jq -r .value)
-export TG_ALLOWEDCHATS=$(bws secret get fd77264c-5755-497f-a2d0-b262017dde4b | jq -r .value)
+export TG_GROUPID=$(bws secret get 0a25642b-b877-4415-962b-b041013fb276 | jq -r .value)
+export TG_ADMINUSERIDS=$(bws secret get dd565e5f-a287-4f5e-99f9-b35b015163c6 | jq -r .value)
 export WEATHERAPI_KEY=$(bws secret get 627efa5d-6fdb-48bd-8956-b041013fcdab | jq -r .value)
 export CURRENCYAPI_KEY=$(bws secret get 3cdeba53-2ee5-49c6-9956-b041013fe498 | jq -r .value)
 export OPENAIAPI_KEY=$(bws secret get 645021f0-b0eb-41af-9aa9-b041013ff1a5 | jq -r .value)

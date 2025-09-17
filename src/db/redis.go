@@ -110,3 +110,44 @@ func (c *Client) GetTranslation(ctx context.Context, text []string) (string, err
 func (c *Client) SetTranslation(ctx context.Context, text []string, translation interface{}) error {
 	return c.Set(ctx, c.DeepLKey(text), translation, 24*time.Hour)
 }
+
+// Chat management functions
+
+// AddChat adds a chat ID to the authorized chats set
+func (c *Client) AddChat(ctx context.Context, chatID int64) error {
+	return c.client.SAdd(ctx, "authorized_chats", chatID).Err()
+}
+
+// RemoveChat removes a chat ID from the authorized chats set
+func (c *Client) RemoveChat(ctx context.Context, chatID int64) error {
+	return c.client.SRem(ctx, "authorized_chats", chatID).Err()
+}
+
+// IsChatAuthorized checks if a chat ID is in the authorized chats set
+func (c *Client) IsChatAuthorized(ctx context.Context, chatID int64) (bool, error) {
+	return c.client.SIsMember(ctx, "authorized_chats", chatID).Result()
+}
+
+// GetAuthorizedChats returns all authorized chat IDs
+func (c *Client) GetAuthorizedChats(ctx context.Context) ([]string, error) {
+	return c.client.SMembers(ctx, "authorized_chats").Result()
+}
+
+// CreateInviteToken creates a temporary invite token that expires in 24 hours
+func (c *Client) CreateInviteToken(ctx context.Context, token string) error {
+	return c.Set(ctx, "invite_token:"+token, "valid", 24*time.Hour)
+}
+
+// ValidateInviteToken checks if an invite token is valid and removes it
+func (c *Client) ValidateInviteToken(ctx context.Context, token string) (bool, error) {
+	key := "invite_token:" + token
+	exists, err := c.Exists(ctx, key)
+	if err != nil {
+		return false, err
+	}
+	if exists {
+		err = c.Delete(ctx, key)
+		return true, err
+	}
+	return false, nil
+}

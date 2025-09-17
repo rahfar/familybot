@@ -11,9 +11,8 @@ services:
     environment:
       - DEBUG
       - TZ=Europe/Helsinki
-      - TG_GROUP
-      - TG_ALLOWEDUSERNAMES
-      - TG_ALLOWEDCHATS
+      - TG_GROUPID
+      - TG_ADMINUSERIDS
       - TG_TOKEN
       - WEATHERAPI_KEY
       - CURRENCYAPI_KEY

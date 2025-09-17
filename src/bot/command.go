@@ -71,6 +71,36 @@ var Commands = map[string]Command{
 		Handler:     translateRu2Eng,
 		Hidden:      true,
 	},
+	"/add": {
+		Name:        "/add",
+		Description: "Добавить чат (только для админов).",
+		Handler:     addUser,
+		Hidden:      true,
+	},
+	"/remove": {
+		Name:        "/remove",
+		Description: "Удалить чат (только для админов).",
+		Handler:     removeUser,
+		Hidden:      true,
+	},
+	"/users": {
+		Name:        "/users",
+		Description: "Список авторизованных чатов (только для админов).",
+		Handler:     listUsers,
+		Hidden:      true,
+	},
+	"/invite": {
+		Name:        "/invite",
+		Description: "Сгенерировать ссылку приглашения (только для админов).",
+		Handler:     generateInvite,
+		Hidden:      true,
+	},
+	"/start": {
+		Name:        "/start",
+		Description: "Начать работу с ботом.",
+		Handler:     handleStartCommand,
+		Hidden:      true,
+	},
 }
 
 // Register commands that reference Commands itself in init to avoid initialization cycle.

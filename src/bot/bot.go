@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -15,24 +16,25 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/rahfar/familybot/src/apiclient"
+	"github.com/rahfar/familybot/src/db"
 	"github.com/rahfar/familybot/src/metrics"
 )
 
 type Bot struct {
-	Token            string
-	Dbg              bool
-	Host             string
-	Port             string
-	AllowedUsernames []string
-	AllowedChats     []int64
-	GroupID          int64
-	AskGPTCache      *expirable.LRU[string, []apiclient.GPTResponse]
-	TGBotAPI         *tgbotapi.BotAPI
-	ExchangeAPI      *apiclient.ExchangeAPI
-	OpenaiAPI        *apiclient.OpenaiAPI
-	WeatherAPI       *apiclient.WeatherAPI
-	MinifluxAPI      *apiclient.MinifluxAPI
-	DeeplAPI         *apiclient.DeeplAPI
+	Token        string
+	Dbg          bool
+	Host         string
+	Port         string
+	AdminUserIDs []int64
+	GroupID      int64
+	AskGPTCache  *expirable.LRU[string, []apiclient.GPTResponse]
+	TGBotAPI     *tgbotapi.BotAPI
+	ExchangeAPI  *apiclient.ExchangeAPI
+	OpenaiAPI    *apiclient.OpenaiAPI
+	WeatherAPI   *apiclient.WeatherAPI
+	MinifluxAPI  *apiclient.MinifluxAPI
+	DeeplAPI     *apiclient.DeeplAPI
+	DBClient     *db.Client
 }
 
 func (b *Bot) Run() {
@@ -60,8 +62,8 @@ func (b *Bot) Run() {
 			if update.Message.Chat.IsPrivate() {
 				unauthorizedResponse := fmt.Sprintf(
 					"У вас нет прав на общение с этим ботом. Пожалуйста, свяжитесь с администратором. "+
-						"Ваш user ID: %d",
-					update.Message.From.ID,
+						"Chat ID: %d",
+					update.Message.Chat.ID,
 				)
 				msgConfig := tgbotapi.NewMessage(update.Message.Chat.ID, unauthorizedResponse)
 				msgConfig.ReplyToMessageID = update.Message.MessageID
@@ -215,13 +217,31 @@ func (b *Bot) mourningJob() {
 }
 
 func (b *Bot) isMessageFromAllowedChat(update tgbotapi.Update) bool {
-	if update.Message.Chat.ID == b.GroupID {
+	chatID := update.Message.Chat.ID
+
+	// Always allow the main group
+	if chatID == b.GroupID {
 		return true
 	}
-	if slices.Contains(b.AllowedUsernames, update.Message.Chat.UserName) {
+
+	// For private chats, check if the user is admin
+	if update.Message.Chat.IsPrivate() && b.isUserAdmin(update.Message.From.ID) {
 		return true
 	}
-	return slices.Contains(b.AllowedChats, update.Message.Chat.ID)
+
+	// Check if this chat (private or group) is authorized
+	ctx := context.Background()
+	authorized, err := b.DBClient.IsChatAuthorized(ctx, chatID)
+	if err != nil {
+		slog.Error("error checking chat authorization", "err", err, "chat_id", chatID)
+		return false
+	}
+
+	return authorized
+}
+
+func (b *Bot) isUserAdmin(userID int64) bool {
+	return slices.Contains(b.AdminUserIDs, userID)
 }
 
 func (b *Bot) sendMessage(msg tgbotapi.MessageConfig) {
