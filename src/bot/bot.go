@@ -57,6 +57,16 @@ func (b *Bot) Run() {
 
 		if !b.isMessageFromAllowedChat(update) {
 			slog.Info("skip message from unsupported chat", "chat", *update.Message.Chat)
+			if update.Message.Chat.IsPrivate() {
+				unauthorizedResponse := fmt.Sprintf(
+					"У вас нет прав на общение с этим ботом. Пожалуйста, свяжитесь с администратором. "+
+						"Ваш user ID: %d",
+					update.Message.From.ID,
+				)
+				msgConfig := tgbotapi.NewMessage(update.Message.Chat.ID, unauthorizedResponse)
+				msgConfig.ReplyToMessageID = update.Message.MessageID
+				b.sendMessage(msgConfig)
+			}
 			continue
 		}
 		go b.onMessage(*update.Message)

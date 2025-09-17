@@ -132,8 +132,14 @@ func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 		return
 	}
 
-	responseHistory = append(responseHistory, apiclient.GPTResponse{Role: openai.ChatMessageRoleAssistant, Content: ans, Time: time.Now()})
-	responseHistory = append(responseHistory, apiclient.GPTResponse{Role: openai.ChatMessageRoleUser, Content: question, Time: time.Now()})
+	responseHistory = append(responseHistory, apiclient.GPTResponse{
+		Role:    openai.ChatMessageRoleAssistant,
+		Content: ans, Time: time.Now(),
+	})
+	responseHistory = append(responseHistory, apiclient.GPTResponse{
+		Role:    openai.ChatMessageRoleUser,
+		Content: question, Time: time.Now(),
+	})
 	b.AskGPTCache.Add(strconv.FormatInt(msg.Chat.ID, 10), responseHistory)
 
 	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, ans)
