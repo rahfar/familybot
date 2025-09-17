@@ -10,14 +10,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/rahfar/familybot/src/db"
 )
 
 type WeatherAPI struct {
 	ApiKey      string
 	Config      WeatherAPIConfig
 	HttpClient  *http.Client
-	RedisClient *redis.Client
+	DBClient *db.Client
 }
 
 type WeatherAPIConfig struct {
@@ -136,7 +136,7 @@ func readConfigFile(configFilePath string) (WeatherAPIConfig, error) {
 	return config, nil
 }
 
-func NewWeatherAPI(apiKey string, configFile string, httpClient *http.Client, redisCliend *redis.Client) *WeatherAPI {
+func NewWeatherAPI(apiKey string, configFile string, httpClient *http.Client, dbClient *db.Client) *WeatherAPI {
 	cfg, err := readConfigFile(configFile)
 
 	if err != nil {
@@ -144,10 +144,10 @@ func NewWeatherAPI(apiKey string, configFile string, httpClient *http.Client, re
 	}
 
 	return &WeatherAPI{
-		ApiKey:     apiKey,
-		Config:     cfg,
-		HttpClient: httpClient,
-		RedisClient: redisCliend,
+		ApiKey:      apiKey,
+		Config:      cfg,
+		HttpClient:  httpClient,
+		DBClient: dbClient,
 	}
 }
 
@@ -164,10 +164,6 @@ func (w *WeatherAPI) GetWeather() []WeatherResponse {
 		}
 	}
 	return weather
-}
-
-func calcCacheKey(lat, lon float64) string {
-	return fmt.Sprintf("openweatherapi_lat=%f&lon=%f", lat, lon)
 }
 
 func (w *WeatherAPI) GetMinMaxTemp(weather WeatherResponse) (float64, float64) {
@@ -210,11 +206,9 @@ func (w *WeatherAPI) callCurrentAPI(lat, lon float64) (*WeatherResponse, error) 
 	baseURL := "https://api.openweathermap.org/data/2.5/forecast"
 	queryStr := fmt.Sprintf("?lat=%f&lon=%f&appid=%s&lang=ru&units=metric", lat, lon, w.ApiKey)
 
-	cacheKey := calcCacheKey(lat, lon)
-
-	v, err := w.RedisClient.Get(ctx, cacheKey).Result()
+	v, err := w.DBClient.GetWeatherData(ctx, lat, lon)
 	if err == nil {
-		slog.Info("hit deeplapi cache", "key", cacheKey)
+		slog.Info("hit weatherapi cache", "key", w.DBClient.WeatherKey(lat, lon))
 		err := json.Unmarshal([]byte(v), &weather)
 		if err == nil {
 			return &weather, nil
@@ -234,7 +228,7 @@ func (w *WeatherAPI) callCurrentAPI(lat, lon float64) (*WeatherResponse, error) 
 		}
 
 		if resp.StatusCode/100 == 2 {
-			err := w.RedisClient.SetArgs(ctx, cacheKey, body, redis.SetArgs{TTL: 3 * time.Hour}).Err()
+			err := w.DBClient.SetWeatherData(ctx, lat, lon, body)
 			if err != nil {
 				slog.Info("could not write cache", "err", err)
 			}

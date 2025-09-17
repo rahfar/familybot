@@ -9,13 +9,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/rahfar/familybot/src/db"
 )
 
 type ExchangeAPI struct {
 	ApiKey      string
 	HttpClient  *http.Client
-	RedisClient *redis.Client
+	DBClient *db.Client
 }
 
 type ExchangeRates struct {
@@ -49,11 +49,9 @@ func (e *ExchangeAPI) GetExchangeRates(datetime time.Time) (*ExchangeRates, erro
 		queryStr = fmt.Sprintf("?apikey=%s", e.ApiKey)
 	}
 
-	cacheKey := "currencyapi_" + datetime.Format("2006-01-02")
-
-	v, err := e.RedisClient.Get(ctx, cacheKey).Result()
+	v, err := e.DBClient.GetCurrencyRates(ctx, datetime)
 	if err == nil {
-		slog.Info("hit deeplapi cache", "key", cacheKey)
+		slog.Info("hit currencyapi cache", "key", e.DBClient.CurrencyKey(datetime))
 		err := json.Unmarshal([]byte(v), &xr)
 		if err == nil {
 			return &xr, nil
@@ -73,7 +71,7 @@ func (e *ExchangeAPI) GetExchangeRates(datetime time.Time) (*ExchangeRates, erro
 		}
 
 		if resp.StatusCode/100 == 2 {
-			if err := e.RedisClient.SetArgs(ctx, cacheKey, body, redis.SetArgs{TTL: 7 * 24 * time.Hour}).Err(); err != nil {
+			if err := e.DBClient.SetCurrencyRates(ctx, datetime, body); err != nil {
 				slog.Info("could not write cache", "err", err)
 			}
 			err := json.Unmarshal(body, &xr)

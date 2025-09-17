@@ -8,14 +8,11 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
-
-	"github.com/redis/go-redis/v9"
 )
 
 type AnthropicAPI struct {
 	ApiKey      string
 	HttpClient  *http.Client
-	RedisClient *redis.Client
 	Model       string
 	ApiVersion  string
 	MaxTokens   int

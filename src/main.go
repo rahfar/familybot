@@ -13,10 +13,10 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/jessevdk/go-flags"
-	"github.com/redis/go-redis/v9"
 
 	"github.com/rahfar/familybot/src/apiclient"
 	"github.com/rahfar/familybot/src/bot"
+	"github.com/rahfar/familybot/src/db"
 )
 
 var opts struct {
@@ -34,7 +34,7 @@ var opts struct {
 		Key string `long:"key" env:"KEY"`
 	} `group:"currencyapi" namespace:"currencyapi" env-namespace:"CURRENCYAPI"`
 	OpenaiAPI struct {
-		Key      string `long:"key" env:"KEY"`
+		Key string `long:"key" env:"KEY"`
 	} `group:"openaiapi" namespace:"openaiapi" env-namespace:"OPENAIAPI"`
 	MinifluxAPI struct {
 		Key     string `long:"key" env:"KEY"`
@@ -94,15 +94,31 @@ func main() {
 	slog.Info("bot is authorized", "bot-username", bot_api.Self.UserName)
 
 	httpClient := &http.Client{Timeout: 60 * time.Second}
-	redisClient := redis.NewClient(&redis.Options{Addr: opts.RedisAddr})
+	dbClient := db.NewClient(opts.RedisAddr)
 
-	exchangeAPI := &apiclient.ExchangeAPI{ApiKey: opts.CurrencyAPI.Key, RedisClient: redisClient, HttpClient: httpClient}
-	openaiAPI := &apiclient.OpenaiAPI{ApiKey: opts.OpenaiAPI.Key, HttpClient: httpClient}
-	deeplAPI := &apiclient.DeeplAPI{HttpClient: httpClient, RedisClient: redisClient, ApiKey: opts.DeeplAPI.Key, BaseURL: opts.DeeplAPI.BaseURL}
-	minifluxAPI := &apiclient.MinifluxAPI{ApiKey: opts.MinifluxAPI.Key, BaseURL: opts.MinifluxAPI.BaseURL}
-	weatherAPI := apiclient.NewWeatherAPI(opts.WeatherAPI.Key, opts.WeatherAPI.ConfigFile, httpClient, redisClient)
+	exchangeAPI := &apiclient.ExchangeAPI{
+		ApiKey:     opts.CurrencyAPI.Key,
+		DBClient:   dbClient,
+		HttpClient: httpClient,
+	}
+	openaiAPI := &apiclient.OpenaiAPI{
+		ApiKey:     opts.OpenaiAPI.Key,
+		HttpClient: httpClient,
+	}
+	deeplAPI := &apiclient.DeeplAPI{
+		HttpClient: httpClient,
+		DBClient:   dbClient,
+		ApiKey:     opts.DeeplAPI.Key,
+		BaseURL:    opts.DeeplAPI.BaseURL,
+	}
+	minifluxAPI := &apiclient.MinifluxAPI{
+		ApiKey:  opts.MinifluxAPI.Key,
+		BaseURL: opts.MinifluxAPI.BaseURL,
+	}
+	weatherAPI := apiclient.NewWeatherAPI(opts.WeatherAPI.Key, opts.WeatherAPI.ConfigFile, httpClient, dbClient)
 
 	allowedchats, err := ConvertCommaSeparatedStringToInt64Slice(opts.Telegram.AllowedChats)
+
 	if err != nil {
 		slog.Error("Error parsing AllowedChats")
 		panic(err)

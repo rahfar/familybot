@@ -3,21 +3,18 @@ package apiclient
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
-	"strings"
 	"time"
 
-	"github.com/redis/go-redis/v9"
+	"github.com/rahfar/familybot/src/db"
 )
 
 type DeeplAPI struct {
-	RedisClient *redis.Client
+	DBClient *db.Client
 	HttpClient  *http.Client
 	BaseURL     string
 	ApiKey      string
@@ -35,22 +32,13 @@ type Translation struct {
 	Text       string `json:"text"`
 }
 
-func (a *DeeplAPI) calcCacheKey(text []string) string {
-	// check cache
-	concatenatedString := strings.Join(text, "")
-	hashBytes := md5.Sum([]byte(concatenatedString))
-	hashSlice := hashBytes[:]
-	return "deeplapi_" + hex.EncodeToString(hashSlice)
-}
-
 func (a *DeeplAPI) CallDeeplAPI(text []string) (string, error) {
 	const maxRetry = 3
 
 	ctx := context.Background()
-	cacheKey := a.calcCacheKey(text)
-	v, err := a.RedisClient.Get(ctx, cacheKey).Result()
+	v, err := a.DBClient.GetTranslation(ctx, text)
 	if err == nil {
-		slog.Info("hit deeplapi cache", "key", cacheKey)
+		slog.Info("hit deeplapi cache", "key", a.DBClient.DeepLKey(text))
 		return v, nil
 	}
 
@@ -85,7 +73,7 @@ func (a *DeeplAPI) CallDeeplAPI(text []string) (string, error) {
 				return "", err
 			}
 			if len(t.Translations) > 0 {
-				err := a.RedisClient.SetArgs(ctx, cacheKey, t.Translations[0].Text, redis.SetArgs{TTL: 24 * time.Hour}).Err()
+				err := a.DBClient.SetTranslation(ctx, text, t.Translations[0].Text)
 				if err != nil {
 					slog.Info("could not write cache", "err", err)
 				}
