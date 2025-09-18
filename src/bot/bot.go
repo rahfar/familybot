@@ -55,22 +55,29 @@ func (b *Bot) Run() {
 			continue
 		}
 
+		if strings.HasPrefix(update.Message.Text, "/start") || strings.HasPrefix(update.Message.Text, "/whoami") {
+			// Always allow /start and /whoami commands
+			slog.Info("received /start or /whoami command", "from", update.Message.From, "chat", update.Message.Chat)
+		} else {
+			// Check if the chat is authorized
+			if !b.isChatAuthorized(*update.Message) {
+				slog.Info("skip message from unsupported chat", "chat", *update.Message.Chat)
+				if update.Message.Chat.IsPrivate() {
+					unauthorizedResponse := fmt.Sprintf(
+						"У вас нет прав на общение с этим ботом. Пожалуйста, свяжитесь с администратором. "+
+							"Chat ID: %d",
+						update.Message.Chat.ID,
+					)
+					msgConfig := tgbotapi.NewMessage(update.Message.Chat.ID, unauthorizedResponse)
+					msgConfig.ReplyToMessageID = update.Message.MessageID
+					b.sendMessage(msgConfig)
+				}
+				return
+			}
+		}
+
 		metrics.RecvMsgCounter.Inc()
 
-		if !b.isMessageFromAllowedChat(update) {
-			slog.Info("skip message from unsupported chat", "chat", *update.Message.Chat)
-			if update.Message.Chat.IsPrivate() {
-				unauthorizedResponse := fmt.Sprintf(
-					"У вас нет прав на общение с этим ботом. Пожалуйста, свяжитесь с администратором. "+
-						"Chat ID: %d",
-					update.Message.Chat.ID,
-				)
-				msgConfig := tgbotapi.NewMessage(update.Message.Chat.ID, unauthorizedResponse)
-				msgConfig.ReplyToMessageID = update.Message.MessageID
-				b.sendMessage(msgConfig)
-			}
-			continue
-		}
 		go b.onMessage(*update.Message)
 	}
 }
@@ -94,10 +101,8 @@ func (b *Bot) onMessage(msg tgbotapi.Message) {
 		metrics.CommandCallsCaounter.With(prometheus.Labels{"command": cmd.Name}).Inc()
 		cmd.Handler(b, &msg)
 	} else if msg.Voice != nil {
-		slog.Debug("voice message")
 		transcriptVoice(b, &msg)
 	} else if msg.Chat.IsPrivate() {
-		slog.Debug("private message")
 		cmd, exists := Commands["/gpt"]
 		if !exists {
 			slog.Error("could not find command /gpt")
@@ -216,8 +221,8 @@ func (b *Bot) mourningJob() {
 	}
 }
 
-func (b *Bot) isMessageFromAllowedChat(update tgbotapi.Update) bool {
-	chatID := update.Message.Chat.ID
+func (b *Bot) isChatAuthorized(msg tgbotapi.Message) bool {
+	chatID := msg.Chat.ID
 
 	// Always allow the main group
 	if chatID == b.GroupID {
@@ -225,7 +230,7 @@ func (b *Bot) isMessageFromAllowedChat(update tgbotapi.Update) bool {
 	}
 
 	// For private chats, check if the user is admin
-	if update.Message.Chat.IsPrivate() && b.isUserAdmin(update.Message.From.ID) {
+	if msg.Chat.IsPrivate() && b.isUserAdmin(msg.From.ID) {
 		return true
 	}
 
