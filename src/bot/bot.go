@@ -11,7 +11,6 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -27,7 +26,6 @@ type Bot struct {
 	Port         string
 	AdminUserIDs []int64
 	GroupID      int64
-	AskGPTCache  *expirable.LRU[string, []apiclient.GPTResponse]
 	TGBotAPI     *tgbotapi.BotAPI
 	ExchangeAPI  *apiclient.ExchangeAPI
 	OpenaiAPI    *apiclient.OpenaiAPI

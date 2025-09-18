@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -150,4 +151,51 @@ func (c *Client) ValidateInviteToken(ctx context.Context, token string) (bool, e
 		return true, err
 	}
 	return false, nil
+}
+
+// GPTResponse represents a single GPT conversation entry
+type GPTResponse struct {
+	Role    string    `json:"role"`
+	Content string    `json:"content"`
+	Time    time.Time `json:"time"`
+}
+
+// GPT conversation cache functions
+
+// GetGPTHistory retrieves the GPT conversation history for a chat
+func (c *Client) GetGPTHistory(ctx context.Context, chatID string) ([]GPTResponse, error) {
+	key := "gpt_history:" + chatID
+	data, err := c.Get(ctx, key)
+	if err != nil {
+		if err == redis.Nil {
+			// Key doesn't exist, return empty slice
+			return []GPTResponse{}, nil
+		}
+		return nil, err
+	}
+
+	var history []GPTResponse
+	err = json.Unmarshal([]byte(data), &history)
+	if err != nil {
+		return nil, err
+	}
+
+	return history, nil
+}
+
+// SetGPTHistory stores the GPT conversation history for a chat
+func (c *Client) SetGPTHistory(ctx context.Context, chatID string, history []GPTResponse) error {
+	key := "gpt_history:" + chatID
+	data, err := json.Marshal(history)
+	if err != nil {
+		return err
+	}
+
+	return c.Set(ctx, key, data, 0)
+}
+
+// DeleteGPTHistory removes the GPT conversation history for a chat
+func (c *Client) DeleteGPTHistory(ctx context.Context, chatID string) error {
+	key := "gpt_history:" + chatID
+	return c.Delete(ctx, key)
 }

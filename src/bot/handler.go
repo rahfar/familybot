@@ -19,6 +19,7 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 
 	"github.com/rahfar/familybot/src/apiclient"
+	"github.com/rahfar/familybot/src/db"
 )
 
 func ping(b *Bot, msg *tgbotapi.Message) {
@@ -93,6 +94,31 @@ func sendMourningDigest(b *Bot, msg *tgbotapi.Message) {
 	b.sendMessage(msgConfig)
 }
 
+// Helper functions to convert between GPTResponse types
+func dbToApiGPTResponse(dbResponse []db.GPTResponse) []apiclient.GPTResponse {
+	result := make([]apiclient.GPTResponse, len(dbResponse))
+	for i, response := range dbResponse {
+		result[i] = apiclient.GPTResponse{
+			Role:    response.Role,
+			Content: response.Content,
+			Time:    response.Time,
+		}
+	}
+	return result
+}
+
+func apiToDbGPTResponse(apiResponse []apiclient.GPTResponse) []db.GPTResponse {
+	result := make([]db.GPTResponse, len(apiResponse))
+	for i, response := range apiResponse {
+		result[i] = db.GPTResponse{
+			Role:    response.Role,
+			Content: response.Content,
+			Time:    response.Time,
+		}
+	}
+	return result
+}
+
 func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 	var question string
 
@@ -119,10 +145,16 @@ func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 	}
 	slog.Debug("askChatGPT", "question", question)
 
-	responseHistory, ok := b.AskGPTCache.Get(strconv.FormatInt(msg.Chat.ID, 10))
-	if !ok {
-		responseHistory = make([]apiclient.GPTResponse, 0)
+	ctx := context.Background()
+	chatID := strconv.FormatInt(msg.Chat.ID, 10)
+
+	dbResponseHistory, err := b.DBClient.GetGPTHistory(ctx, chatID)
+	if err != nil {
+		slog.Error("error getting GPT history from Redis", "err", err, "chat_id", chatID)
+		dbResponseHistory = make([]db.GPTResponse, 0)
 	}
+
+	responseHistory := dbToApiGPTResponse(dbResponseHistory)
 	// DISABLED auto cleanup old messages
 	// responseHistory = filterOldGPTResponce(responseHistory)
 
@@ -145,7 +177,12 @@ func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 		Content: question,
 		Time:    time.Now(),
 	})
-	b.AskGPTCache.Add(strconv.FormatInt(msg.Chat.ID, 10), responseHistory)
+
+	dbResponseHistory = apiToDbGPTResponse(responseHistory)
+	err = b.DBClient.SetGPTHistory(ctx, chatID, dbResponseHistory)
+	if err != nil {
+		slog.Error("error saving GPT history to Redis", "err", err, "chat_id", chatID)
+	}
 
 	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, ans)
 	msgConfig.ParseMode = tgbotapi.ModeMarkdown
@@ -167,7 +204,14 @@ func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.G
 }
 
 func newChatGPT(b *Bot, msg *tgbotapi.Message) {
-	b.AskGPTCache.Remove(strconv.FormatInt(msg.Chat.ID, 10))
+	ctx := context.Background()
+	chatID := strconv.FormatInt(msg.Chat.ID, 10)
+
+	err := b.DBClient.DeleteGPTHistory(ctx, chatID)
+	if err != nil {
+		slog.Error("error deleting GPT history from Redis", "err", err, "chat_id", chatID)
+	}
+
 	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Контекст вызова GPT удален")
 	b.sendMessage(msgConfig)
 }

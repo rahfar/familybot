@@ -11,7 +11,6 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/jessevdk/go-flags"
 
 	"github.com/rahfar/familybot/src/apiclient"
@@ -129,7 +128,6 @@ func main() {
 		Port:         opts.Port,
 		AdminUserIDs: adminUserIDs,
 		GroupID:      opts.Telegram.GroupID,
-		AskGPTCache:  expirable.NewLRU[string, []apiclient.GPTResponse](1000, nil, time.Minute*30),
 		ExchangeAPI:  exchangeAPI,
 		OpenaiAPI:    openaiAPI,
 		WeatherAPI:   weatherAPI,
