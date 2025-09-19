@@ -203,7 +203,7 @@ func filterOldGPTResponce(responseHistory []apiclient.GPTResponse) []apiclient.G
 	return filtered
 }
 
-func newChatGPT(b *Bot, msg *tgbotapi.Message) {
+func restartChatGPT(b *Bot, msg *tgbotapi.Message) {
 	ctx := context.Background()
 	chatID := strconv.FormatInt(msg.Chat.ID, 10)
 

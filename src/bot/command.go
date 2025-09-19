@@ -42,10 +42,10 @@ var Commands = map[string]Command{
 		Handler:     getCurrentWeather,
 		Hidden:      true,
 	},
-	"/new": {
-		Name:        "/new",
+	"/restart": {
+		Name:        "/restart",
 		Description: "Сбросить контекст в работе с ChatGPT.",
-		Handler:     newChatGPT,
+		Handler:     restartChatGPT,
 	},
 	"/gpt": {
 		Name:        "/gpt",
@@ -109,6 +109,6 @@ func AddListCommand() {
 		Name:        "/list",
 		Description: "Список доступных команд.",
 		Handler:     listCommands,
-		Hidden:      false,
+		Hidden:      true,
 	}
 }
