@@ -60,6 +60,10 @@ func (b *Bot) Run() {
 			// Check if the chat is authorized
 			if !b.isChatAuthorized(*update.Message) {
 				slog.Info("skip message from unsupported chat", "chat", *update.Message.Chat)
+
+				// Notify admins about unauthorized access attempt
+				b.notifyAdminsUnauthorizedAccess(*update.Message)
+
 				if update.Message.Chat.IsPrivate() {
 					unauthorizedResponse := fmt.Sprintf(
 						"У вас нет прав на общение с этим ботом. Пожалуйста, свяжитесь с администратором. "+
@@ -75,6 +79,9 @@ func (b *Bot) Run() {
 		}
 
 		metrics.RecvMsgCounter.Inc()
+
+		// Store chat info for authorized messages
+		b.storeChatInfo(*update.Message)
 
 		go b.onMessage(*update.Message)
 	}
@@ -245,6 +252,72 @@ func (b *Bot) isChatAuthorized(msg tgbotapi.Message) bool {
 
 func (b *Bot) isUserAdmin(userID int64) bool {
 	return slices.Contains(b.AdminUserIDs, userID)
+}
+
+func (b *Bot) notifyAdminsUnauthorizedAccess(msg tgbotapi.Message) {
+	var chatInfo string
+	var userName string
+
+	if msg.Chat.IsPrivate() {
+		userName = msg.From.FirstName
+		if msg.From.LastName != "" {
+			userName += " " + msg.From.LastName
+		}
+		if msg.From.UserName != "" {
+			userName += " (@" + msg.From.UserName + ")"
+		}
+		chatInfo = fmt.Sprintf("пользователь %s", userName)
+	} else {
+		chatTitle := msg.Chat.Title
+		if chatTitle == "" {
+			chatTitle = "Unknown Group"
+		}
+		chatInfo = fmt.Sprintf("группа '%s'", chatTitle)
+	}
+
+	notificationText := fmt.Sprintf(
+		"🚫 Попытка неавторизованного доступа:\n"+
+			"От: %s\n"+
+			"Chat ID: %d\n"+
+			"Сообщение: %s",
+		chatInfo,
+		msg.Chat.ID,
+		msg.Text,
+	)
+
+	// Send notification to all admins
+	for _, adminID := range b.AdminUserIDs {
+		notificationMsg := tgbotapi.NewMessage(adminID, notificationText)
+		b.sendMessage(notificationMsg)
+	}
+}
+
+func (b *Bot) storeChatInfo(msg tgbotapi.Message) {
+	ctx := context.Background()
+	chatID := msg.Chat.ID
+
+	var chatInfo string
+	if msg.Chat.IsPrivate() {
+		userName := msg.From.FirstName
+		if msg.From.LastName != "" {
+			userName += " " + msg.From.LastName
+		}
+		if msg.From.UserName != "" {
+			userName += " (@" + msg.From.UserName + ")"
+		}
+		chatInfo = userName
+	} else {
+		chatTitle := msg.Chat.Title
+		if chatTitle == "" {
+			chatTitle = "Unknown Group"
+		}
+		chatInfo = chatTitle
+	}
+
+	err := b.DBClient.StoreChatInfo(ctx, chatID, chatInfo)
+	if err != nil {
+		slog.Error("error storing chat info", "err", err, "chat_id", chatID, "chat_info", chatInfo)
+	}
 }
 
 func (b *Bot) sendMessage(msg tgbotapi.MessageConfig) {

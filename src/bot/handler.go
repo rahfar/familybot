@@ -458,17 +458,17 @@ func listUsers(b *Bot, msg *tgbotapi.Message) {
 
 	ctx := context.Background()
 
-	// Get authorized chats
-	chats, err := b.DBClient.GetAuthorizedChats(ctx)
+	// Get authorized chats with info
+	chatsWithInfo, err := b.DBClient.GetAuthorizedChatsWithInfo(ctx)
 	if err != nil {
-		slog.Error("error getting chats", "err", err)
+		slog.Error("error getting chats with info", "err", err)
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при получении списка чатов")
 		msgConfig.ReplyToMessageID = msg.MessageID
 		b.sendMessage(msgConfig)
 		return
 	}
 
-	if len(chats) == 0 {
+	if len(chatsWithInfo) == 0 {
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Список авторизованных чатов пуст")
 		msgConfig.ReplyToMessageID = msg.MessageID
 		b.sendMessage(msgConfig)
@@ -476,8 +476,14 @@ func listUsers(b *Bot, msg *tgbotapi.Message) {
 	}
 
 	text := "Авторизованные чаты:\n"
-	for _, chat := range chats {
-		text += fmt.Sprintf("• %s\n", chat)
+	for chatID, chatInfo := range chatsWithInfo {
+		if chatInfo != chatID {
+			// We have additional info about this chat
+			text += fmt.Sprintf("• %s (ID: %s)\n", chatInfo, chatID)
+		} else {
+			// No additional info, just show the ID
+			text += fmt.Sprintf("• %s\n", chatID)
+		}
 	}
 
 	msgConfig := tgbotapi.NewMessage(msg.Chat.ID, text)

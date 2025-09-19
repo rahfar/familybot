@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -198,4 +199,47 @@ func (c *Client) SetGPTHistory(ctx context.Context, chatID string, history []GPT
 func (c *Client) DeleteGPTHistory(ctx context.Context, chatID string) error {
 	key := "gpt_history:" + chatID
 	return c.Delete(ctx, key)
+}
+
+// Chat info storage functions
+
+// StoreChatInfo stores additional information about a chat (username for private, group name for groups)
+func (c *Client) StoreChatInfo(ctx context.Context, chatID int64, chatInfo string) error {
+	key := fmt.Sprintf("chat_info:%d", chatID)
+	return c.Set(ctx, key, chatInfo, 0) // No expiration for chat info
+}
+
+// GetChatInfo retrieves stored information about a chat
+func (c *Client) GetChatInfo(ctx context.Context, chatID int64) (string, error) {
+	key := fmt.Sprintf("chat_info:%d", chatID)
+	return c.Get(ctx, key)
+}
+
+// GetAuthorizedChatsWithInfo returns all authorized chat IDs with their stored info
+func (c *Client) GetAuthorizedChatsWithInfo(ctx context.Context) (map[string]string, error) {
+	chatIDs, err := c.GetAuthorizedChats(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]string)
+	for _, chatID := range chatIDs {
+		chatInfo, err := c.GetChatInfo(ctx, parseIntOrDefault(chatID, 0))
+		if err != nil {
+			// If no chat info found, just use the chat ID
+			result[chatID] = chatID
+		} else {
+			result[chatID] = chatInfo
+		}
+	}
+
+	return result, nil
+}
+
+// Helper function to parse string to int64, with default value on error
+func parseIntOrDefault(s string, defaultVal int64) int64 {
+	if val, err := strconv.ParseInt(s, 10, 64); err == nil {
+		return val
+	}
+	return defaultVal
 }
