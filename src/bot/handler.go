@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -94,14 +95,38 @@ func sendMourningDigest(b *Bot, msg *tgbotapi.Message) {
 	b.sendMessage(msgConfig)
 }
 
+// downloadImageAsBase64 downloads an image from URL and returns it as base64 encoded string
+func downloadImageAsBase64(imageURL string) (string, error) {
+	resp, err := http.Get(imageURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to download image: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("failed to download image, status: %d", resp.StatusCode)
+	}
+
+	// Read image data
+	imageData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read image data: %w", err)
+	}
+
+	// Encode as base64
+	base64Data := base64.StdEncoding.EncodeToString(imageData)
+	return base64Data, nil
+}
+
 // Helper functions to convert between GPTResponse types
 func dbToApiGPTResponse(dbResponse []db.GPTResponse) []apiclient.GPTResponse {
 	result := make([]apiclient.GPTResponse, len(dbResponse))
 	for i, response := range dbResponse {
 		result[i] = apiclient.GPTResponse{
-			Role:    response.Role,
-			Content: response.Content,
-			Time:    response.Time,
+			Role:      response.Role,
+			Content:   response.Content,
+			ImageData: response.ImageData,
+			Time:      response.Time,
 		}
 	}
 	return result
@@ -111,9 +136,10 @@ func apiToDbGPTResponse(apiResponse []apiclient.GPTResponse) []db.GPTResponse {
 	result := make([]db.GPTResponse, len(apiResponse))
 	for i, response := range apiResponse {
 		result[i] = db.GPTResponse{
-			Role:    response.Role,
-			Content: response.Content,
-			Time:    response.Time,
+			Role:      response.Role,
+			Content:   response.Content,
+			ImageData: response.ImageData,
+			Time:      response.Time,
 		}
 	}
 	return result
@@ -121,29 +147,93 @@ func apiToDbGPTResponse(apiResponse []apiclient.GPTResponse) []db.GPTResponse {
 
 func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 	var question string
+	var imageData string
 
-	if msg.IsCommand() {
-		question = strings.TrimSpace(msg.CommandArguments())
-	} else if strings.HasPrefix(msg.Text, "/gpt@") {
-		words := strings.SplitN(msg.Text, " ", 2)
-		if len(words) == 2 {
-			question = strings.TrimSpace(words[1])
+	// Check if message contains photo
+	if len(msg.Photo) > 0 {
+		// Get the largest photo size (last element in the array)
+		largestPhoto := msg.Photo[len(msg.Photo)-1]
+		// Get direct URL to the photo
+		photoURL, err := b.TGBotAPI.GetFileDirectURL(largestPhoto.FileID)
+		if err != nil {
+			slog.Error("error getting photo URL", "err", err)
+			msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при обработке изображения")
+			msgConfig.ReplyToMessageID = msg.MessageID
+			b.sendMessage(msgConfig)
+			return
 		}
 
-	} else if strings.HasPrefix(msg.Text, "/gpt") {
-		question = strings.TrimSpace(msg.Text[len("/gpt"):])
+		// Download and encode image as base64
+		base64Data, err := downloadImageAsBase64(photoURL)
+		if err != nil {
+			slog.Error("error downloading and encoding image", "err", err)
+			msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при обработке изображения")
+			msgConfig.ReplyToMessageID = msg.MessageID
+			b.sendMessage(msgConfig)
+			return
+		}
+
+		imageData = base64Data
+		question = strings.TrimSpace(msg.Caption) // For photos, the text is in caption
 	} else {
-		question = strings.TrimSpace(msg.Text)
+		// Handle text messages as before
+		if msg.IsCommand() {
+			question = strings.TrimSpace(msg.CommandArguments())
+		} else if strings.HasPrefix(msg.Text, "/gpt@") {
+			words := strings.SplitN(msg.Text, " ", 2)
+			if len(words) == 2 {
+				question = strings.TrimSpace(words[1])
+			}
+		} else if strings.HasPrefix(msg.Text, "/gpt") {
+			question = strings.TrimSpace(msg.Text[len("/gpt"):])
+		} else {
+			question = strings.TrimSpace(msg.Text)
+		}
 	}
 
-	if len(question) == 0 {
+	// If there's an image but no caption/question, add to history but don't call API
+	if imageData != "" && len(question) == 0 {
+		slog.Debug("image without caption, adding to history only")
+		// Add image to history without calling API
+		ctx := context.Background()
+		chatID := strconv.FormatInt(msg.Chat.ID, 10)
+
+		dbResponseHistory, err := b.DBClient.GetGPTHistory(ctx, chatID)
+		if err != nil {
+			slog.Error("error getting GPT history from Redis", "err", err, "chat_id", chatID)
+			dbResponseHistory = make([]db.GPTResponse, 0)
+		}
+
+		responseHistory := dbToApiGPTResponse(dbResponseHistory)
+		responseHistory = append(responseHistory, apiclient.GPTResponse{
+			Role:      openai.ChatMessageRoleUser,
+			Content:   "[Image without caption]",
+			ImageData: imageData,
+			Time:      time.Now(),
+		})
+
+		dbResponseHistory = apiToDbGPTResponse(responseHistory)
+		err = b.DBClient.SetGPTHistory(ctx, chatID, dbResponseHistory)
+		if err != nil {
+			slog.Error("error saving GPT history to Redis", "err", err, "chat_id", chatID)
+		}
+
+		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Изображение добавлено в контекст")
+		msgConfig.ReplyToMessageID = msg.MessageID
+		b.sendMessage(msgConfig)
+		return
+	}
+
+	// For text-only messages without images, require text
+	if imageData == "" && len(question) == 0 {
 		slog.Debug("empty question")
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Пустой входной вопрос")
 		msgConfig.ReplyToMessageID = msg.MessageID
 		b.sendMessage(msgConfig)
 		return
 	}
-	slog.Debug("askChatGPT", "question", question)
+
+	slog.Debug("askChatGPT", "question", question, "has_image", imageData != "")
 
 	ctx := context.Background()
 	chatID := strconv.FormatInt(msg.Chat.ID, 10)
@@ -158,7 +248,8 @@ func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 	// DISABLED auto cleanup old messages
 	// responseHistory = filterOldGPTResponce(responseHistory)
 
-	ans, err := b.OpenaiAPI.GenerateChatCompletion(question, responseHistory)
+	ans, err := b.OpenaiAPI.GenerateChatCompletion(question, imageData, responseHistory)
+
 	if err != nil || len(ans) == 0 {
 		slog.Error("error occured while call openai", "err", err)
 		msgConfig := tgbotapi.NewMessage(msg.Chat.ID, "Ошибка при вызове ChatGPT :(")
@@ -173,9 +264,10 @@ func askChatGPT(b *Bot, msg *tgbotapi.Message) {
 		Time:    time.Now(),
 	})
 	responseHistory = append(responseHistory, apiclient.GPTResponse{
-		Role:    openai.ChatMessageRoleUser,
-		Content: question,
-		Time:    time.Now(),
+		Role:      openai.ChatMessageRoleUser,
+		Content:   question,
+		ImageData: imageData,
+		Time:      time.Now(),
 	})
 
 	dbResponseHistory = apiToDbGPTResponse(responseHistory)

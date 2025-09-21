@@ -11,9 +11,10 @@ import (
 )
 
 type GPTResponse struct {
-	Role    string
-	Content string
-	Time    time.Time
+	Role      string
+	Content   string
+	ImageData string // base64 encoded image
+	Time      time.Time
 }
 
 type OpenaiAPI struct {
@@ -42,7 +43,11 @@ func (o *OpenaiAPI) requestChatCompletion(messages []openai.ChatCompletionMessag
 			return resp.Choices[0].Message.Content, nil
 		}
 		if APIError, ok := err.(*openai.APIError); ok && i < maxRetry {
-			slog.Info("got error response from api, retrying in 5 seconds...", "retry-cnt", i, "status", APIError.HTTPStatusCode)
+			slog.Info(
+				"got error response from api, retrying in 5 seconds...",
+				"retry-cnt", i,
+				"status", APIError.HTTPStatusCode,
+			)
 			time.Sleep(5 * time.Second)
 		} else {
 			return "", err
@@ -51,17 +56,60 @@ func (o *OpenaiAPI) requestChatCompletion(messages []openai.ChatCompletionMessag
 	return "", fmt.Errorf("max retries reached")
 }
 
-func (o *OpenaiAPI) GenerateChatCompletion(question string, responseHistory []GPTResponse) (string, error) {
+func (o *OpenaiAPI) GenerateChatCompletion(question string, imageData string, responseHistory []GPTResponse) (string, error) {
 	if len(question) > MaxPromptSymbolSize {
 		return "Слишком длинный вопрос, попробуйте покороче", nil
 	}
 
 	messages := make([]openai.ChatCompletionMessage, 0)
 	for _, v := range responseHistory {
-		messages = append(messages, openai.ChatCompletionMessage{Role: v.Role, Content: v.Content})
+		if v.ImageData != "" {
+			// Message with image - create data URL from base64
+			dataURL := "data:image/jpeg;base64," + v.ImageData
+			messages = append(messages, openai.ChatCompletionMessage{
+				Role: v.Role,
+				MultiContent: []openai.ChatMessagePart{
+					{
+						Type: openai.ChatMessagePartTypeText,
+						Text: v.Content,
+					},
+					{
+						Type: openai.ChatMessagePartTypeImageURL,
+						ImageURL: &openai.ChatMessageImageURL{
+							URL:    dataURL,
+							Detail: openai.ImageURLDetailAuto,
+						},
+					},
+				},
+			})
+		} else {
+			// Text-only message
+			messages = append(messages, openai.ChatCompletionMessage{Role: v.Role, Content: v.Content})
+		}
 	}
 
-	messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: question})
+	// Add current message
+	if imageData != "" {
+		// Message with image - create data URL from base64
+		dataURL := "data:image/jpeg;base64," + imageData
+		messages = append(messages, openai.ChatCompletionMessage{
+			Role: openai.ChatMessageRoleUser,
+			MultiContent: []openai.ChatMessagePart{
+				{
+					Type: openai.ChatMessagePartTypeText,
+					Text: question,
+				},
+				{
+					Type:     openai.ChatMessagePartTypeImageURL,
+					ImageURL: &openai.ChatMessageImageURL{URL: dataURL, Detail: openai.ImageURLDetailAuto},
+				},
+			},
+		})
+	} else {
+		// Text-only message
+		messages = append(messages, openai.ChatCompletionMessage{Role: openai.ChatMessageRoleUser, Content: question})
+	}
+
 	return o.requestChatCompletion(messages, "gpt-5")
 }
 

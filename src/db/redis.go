@@ -156,9 +156,10 @@ func (c *Client) ValidateInviteToken(ctx context.Context, token string) (bool, e
 
 // GPTResponse represents a single GPT conversation entry
 type GPTResponse struct {
-	Role    string    `json:"role"`
-	Content string    `json:"content"`
-	Time    time.Time `json:"time"`
+	Role      string    `json:"role"`
+	Content   string    `json:"content"`
+	ImageData string    `json:"image_data,omitempty"` // base64 encoded image
+	Time      time.Time `json:"time"`
 }
 
 // GPT conversation cache functions
